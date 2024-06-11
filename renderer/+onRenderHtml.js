@@ -31,6 +31,7 @@ async function onRenderHtml(pageContext) {
       </head>
       <body>
         <div id="app">${dangerouslySkipEscape(appHtml)}</div>
+        <script src="js/bootstrap.js" defer></script>
       </body>
     </html>`
 

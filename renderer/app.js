@@ -1,10 +1,11 @@
 export { createApp }
 
 import { createSSRApp, h, markRaw, reactive, ref } from 'vue'
-import PageLayout from './PageLayout.vue'
 import { setPageContext } from './usePageContext'
 import { setData } from './useData'
 import { isObject } from './utils'
+
+import PageLayout from '@/layouts/PageLayout.vue'
 
 function createApp(pageContext) {
   const { Page } = pageContext

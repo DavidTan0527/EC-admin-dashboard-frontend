@@ -1,20 +1,12 @@
 <template>
-  <a :class="{ active: isActive }">
+  <a :class="{ 'nav-link': true, active: isActive }">
     <slot />
   </a>
 </template>
-<style scoped>
-a {
-  padding: 2px 10px;
-  margin-left: -10px;
-}
-a.active {
-  background-color: #eee;
-}
-</style>
+
 <script setup>
 import { useAttrs, computed } from 'vue'
-import { usePageContext } from './usePageContext'
+import { usePageContext } from '~renderer/usePageContext'
 
 const pageContext = usePageContext()
 const { href } = useAttrs()
@@ -23,3 +15,4 @@ const isActive = computed(() => {
   return href === '/' ? urlPathname === href : urlPathname.startsWith(href)
 })
 </script>
+

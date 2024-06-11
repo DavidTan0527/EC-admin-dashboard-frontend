@@ -1,12 +1,8 @@
 <template>
-  <h1 class="text-primary">Welcome</h1>
-  This page is:
-  <ul>
-    <li>Rendered to HTML.</li>
-    <li>Interactive. <Counter /></li>
-  </ul>
+    <span>Redirecting to login</span>
 </template>
 
 <script setup>
-import Counter from './Counter.vue'
+import { navigate } from 'vike/client/router'
+navigate("/login")
 </script>

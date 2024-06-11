@@ -10,6 +10,10 @@ export default {
     ],
     resolve: {
         alias: {
+            '@': __dirname,
+            '~renderer': path.resolve(__dirname, 'renderer'),
+            '~layouts': path.resolve(__dirname, 'layouts'),
+            '~components': path.resolve(__dirname, 'components'),
             '~bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
         }
     }
