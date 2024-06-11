@@ -1,5 +1,5 @@
 <template>
-  <h1>Welcome</h1>
+  <h1 class="text-primary">Welcome</h1>
   This page is:
   <ul>
     <li>Rendered to HTML.</li>
