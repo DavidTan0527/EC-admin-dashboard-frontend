@@ -1,12 +1,20 @@
 <script setup>
-import Cookies from "js-cookie"
 const config = useRuntimeConfig()
-definePageMeta({ middleware: ["auth"] })
+definePageMeta({
+  middleware: ["permission"],
+  permissionKey: "PG_USER_MANAGEMENT",
+})
+
+const cookie = useCookie("ec-t")
+if (!cookie?.value) {
+  navigateTo("/login", { redirectCode: 401 })
+}
+console.log("users page:", cookie.value)
 
 const columns = [
-    { label: "Username", key: "username" },
-    { label: "Super User?", key: "is_super" },
-    { label: "Actions", key: "actions" },
+  { label: "Username", key: "username" },
+  { label: "Super User?", key: "is_super" },
+  { label: "Actions", key: "actions" },
 ]
 const rows = ref([])
 
@@ -18,18 +26,18 @@ const btnModalSubmit = ref(null)
 const tb = ref(null)
 
 const form = reactive({
-    username: ref(""),
-    password: ref(""),
-    isSuper: ref(false),
+  username: ref(""),
+  password: ref(""),
+  isSuper: ref(false),
 })
 
-let isLoading = ref(true)
+const isLoading = ref(true)
 
 async function getAllRows() {
   try {
     let res = await $fetch(config.public.apiBase + "/users", {
       headers: {
-        "Authorization": "Bearer " + Cookies.get("ec-t")
+        "Authorization": "Bearer " + cookie.value
       },
     })
     if (res.success) {
@@ -47,7 +55,7 @@ async function submitRegister() {
     let res = await $fetch(config.public.apiBase + "/register", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + Cookies.get("ec-t"),
+        "Authorization": "Bearer " + cookie.value,
         "Content-Type": "application/json",
       },
       body: {
@@ -56,9 +64,9 @@ async function submitRegister() {
         is_super: form.isSuper
       }
     })
-    console.log(res)
+
     if (res.success) {
-      tb.value.notify({ message: `User ${form.username} added`, type: "success" })
+      tb.value.notify({ message: res.message, type: "success" })
       getAllRows()
       addModal.value.close()
     } else {
@@ -78,12 +86,12 @@ async function deleteRow(row) {
     let res = await $fetch(config.public.apiBase + `/user/${row.id}`, {
       method: "DELETE",
       headers: {
-        "Authorization": "Bearer " + Cookies.get("ec-t")
+        "Authorization": "Bearer " + cookie.value,
       },
     })
 
     if (res.success) {
-      tb.value.notify({ message: `User ${row.username} deleted`, type: "success" })
+      tb.value.notify({ message: res.message, type: "success" })
       getAllRows()
     } else {
       tb.value.notify({ message: res.message, type: "error", timeout: 0 })

@@ -1,13 +1,16 @@
 <script setup>
-import Cookies from "js-cookie";
 const config = useRuntimeConfig()
 
 definePageMeta({
   layout: "empty",
 })
 
-const username = useState("username", () => "");
-const password = useState("password", () => "");
+const tb = ref(null)
+
+const username = ref("");
+const password = ref("");
+
+const cookie = useCookie("ec-t", { maxAge: 3 * 24 * 60 * 60 })
 
 async function submitLogin() {
   let res = await $fetch(config.public.apiBase + '/login', {
@@ -19,8 +22,10 @@ async function submitLogin() {
   })
 
   if (res.success) {
-    Cookies.set('ec-t', res.data.token, { expires: 5 })
+    cookie.value = res.data
     await navigateTo("/landing")
+  } else {
+      tb.value.notify({ message: res.message, type: "error" })
   }
 }
 </script>
@@ -44,5 +49,6 @@ async function submitLogin() {
       <button type="submit" class="rounded w-full text-slate-100 bg-gradient-to-r from-cyan-500 to-blue-500 px-3 py-2 drop-shadow hover:drop-shadow-lg duration-100">Login</button>
     </form>
   </div>
+  <ToastBox ref="tb"></ToastBox>
 </template>
 

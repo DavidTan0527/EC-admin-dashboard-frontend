@@ -1,14 +1,39 @@
 <script setup>
-import Cookies from "js-cookie"
+import * as jose from 'jose'
+const nuxtApp = useNuxtApp()
+const config = useRuntimeConfig()
 
-const links = [
+const hexToUint8Array = hexString => new Uint8Array(
+  hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+
+let links = [
   { label: "Home"           , href: "/landing"    , icon: "home" },
-  { label: "User Management", href: "/users"      , icon: "users" },
-  { label: "Permissions"    , href: "/permissions", icon: "lock" },
+  { label: "User Management", href: "/users"      , icon: "users", superOnly: true },
+  { label: "Permissions"    , href: "/permissions", icon: "lock" , superOnly: true },
 ]
 
+const cookie = useCookie("ec-t")
+if (!cookie?.value) {
+  navigateTo("/login", { redirectCode: 401 })
+}
+
+nuxtApp.hook("render:html", async (html, { event }) => {
+  console.log("rendered!!", import.meta.server)
+  console.log(html, event)
+  return
+  const key = hexToUint8Array(config.jwtSecret)
+  try {
+    const { payload } = await jose.jwtVerify(cookie.value, key)
+    if (!payload.is_super) {
+      links = links.filter(link => !link.superOnly)
+    }
+  } catch (err) {
+    navigateTo("/login", { redirectCode: 401 })
+  }
+})
+
 function logout() {
-  Cookies.remove("ec-t")
+  useCookie("ec-t").value = null
   navigateTo("/login")
 }
 

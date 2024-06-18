@@ -1,11 +1,21 @@
 <script setup>
 definePageMeta({
-  middleware: ["auth", "permission"],
+  middleware: ["permission"],
   permissionKey: "PG_PERM",
 })
+
+const isLoading = ref(true)
+
+onMounted(() => {
+  isLoading.value = false
+})
+
 </script>
 
 <template>
-  This is the permissions page
+  <Spinner v-if="isLoading" />
+  <div v-else>
+    This is the permission page
+  </div>
 </template>
 
