@@ -3,7 +3,6 @@ import { initFlowbite } from 'flowbite'
 
 onMounted(() => {
   initFlowbite()
-  feather.replace();
 });
 </script>
 

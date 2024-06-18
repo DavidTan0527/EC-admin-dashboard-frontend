@@ -1,6 +1,7 @@
 // https://nuxt.com/doc/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  modules: [ '@pinia/nuxt' ],
   app: {
     head: {
       meta: [
@@ -11,9 +12,7 @@ export default defineNuxtConfig({
       ],
     },
   },
-  css: ['~/assets/css/main.css'],
-  plugins: [
-  ],
+  css: [ '~/assets/css/main.css' ],
   postcss: {
     plugins: {
       tailwindcss: {},

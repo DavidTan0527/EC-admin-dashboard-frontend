@@ -1,8 +1,11 @@
 import Cookies from "js-cookie"
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
-  // skip middleware on server
-  if (import.meta.server) return
+
+  const { permissionKey } = to.meta
+
+  if (permissionKey === undefined || permissionKey === null || permissionKey === "")
+    return abortNavigation()
 
   const config = useRuntimeConfig()
   try {
@@ -10,19 +13,16 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     if (cookie === "" || cookie === undefined || cookie === null) {
       return navigateTo("/login", { redirectCode: 401 })
     }
-      
 
-    let res = await $fetch<HttpResponse>(config.public.apiBase + "/checkToken", {
+    let res = await $fetch<HttpResponse>(config.public.apiBase + "/permission/" + permissionKey, {
       headers: {
         "Authorization": "Bearer " + Cookies.get("ec-t")
       },
     })
 
-    if (res.success) {
-      return
+    if (!res.success || !res.data) {
+      return abortNavigation("No permission")
     }
-
-    return navigateTo("/login", { redirectCode: 401 })
 
   } catch (err : any) {
     console.log("ERR", err)

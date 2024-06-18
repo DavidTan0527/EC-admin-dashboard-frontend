@@ -10,14 +10,13 @@ const username = useState("username", () => "");
 const password = useState("password", () => "");
 
 async function submitLogin() {
-  let req = await fetch(config.public.apiBase + '/login', {
+  let res = await $fetch(config.public.apiBase + '/login', {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ username: username.value, password: password.value }),
+    body: { username: username.value, password: password.value },
   })
-  let res = await req.json()
 
   if (res.success) {
     Cookies.set('ec-t', res.data.token, { expires: 5 })

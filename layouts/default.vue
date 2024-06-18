@@ -11,6 +11,10 @@ function logout() {
   Cookies.remove("ec-t")
   navigateTo("/login")
 }
+
+onMounted(() => {
+  feather.replace();
+})
 </script>
 
 <template>

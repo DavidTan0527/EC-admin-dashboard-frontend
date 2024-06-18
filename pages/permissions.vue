@@ -1,4 +1,8 @@
 <script setup>
+definePageMeta({
+  middleware: ["auth", "permission"],
+  permissionKey: "PG_PERM",
+})
 </script>
 
 <template>

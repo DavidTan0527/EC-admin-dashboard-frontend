@@ -1,9 +1,7 @@
 <script setup>
 import Cookies from "js-cookie"
 const config = useRuntimeConfig()
-definePageMeta({
-  middleware: ["auth"],
-})
+definePageMeta({ middleware: ["auth"] })
 
 const columns = [
     { label: "Username", key: "username" },
