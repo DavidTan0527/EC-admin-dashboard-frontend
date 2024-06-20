@@ -11,7 +11,6 @@ const route = useRoute()
 function isActive(url) {
   return route.path === url
 }
-
 </script>
 
 <template>

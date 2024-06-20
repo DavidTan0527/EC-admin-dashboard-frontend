@@ -1,7 +1,7 @@
 // https://nuxt.com/doc/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  modules: [ '@pinia/nuxt' ],
+  ssr: true,
   app: {
     head: {
       meta: [

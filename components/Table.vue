@@ -43,8 +43,8 @@ watch(triggerRefresh, () => {
 <template>
   <div class="table-component">
     <div class="w-full flex flex-row justify-between items-center space-x-2 pb-4">
-      <button class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500" type="button" v-if="addBtn" @click="addBtnAction">{{ addBtnText }}</button>
-      <div class="bg-white" v-if="searchColumns.length > 0">
+      <button class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500 hover:bg-blue-600 duration-100" type="button" v-if="addBtn" @click="addBtnAction">{{ addBtnText }}</button>
+      <div class="bg-white grow" v-if="searchColumns.length > 0">
         <label for="table-search" class="sr-only">Search</label>
         <div class="relative">
           <div class="absolute inset-y-0 rtl:inset-r-0 start-0 flex items-center ps-3 pointer-events-none">
@@ -54,7 +54,7 @@ watch(triggerRefresh, () => {
           </div>
           <input
             type="text" id="table-search"
-            class="block py-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-80 bg-white focus:ring-blue-500 focus:border-blue-500"
+            class="block py-2 ps-10 text-sm text-gray-900 border border-gray-300 w-full rounded-lg bg-white focus:ring-blue-500 focus:border-blue-500"
             placeholder="Search for items"
             v-model="search"
             @input="() => displayRows = props.rows.filter(row => props.searchColumns.some(key => row[key].includes(search)))"

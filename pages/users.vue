@@ -9,7 +9,6 @@ const cookie = useCookie("ec-t")
 if (!cookie?.value) {
   navigateTo("/login", { redirectCode: 401 })
 }
-console.log("users page:", cookie.value)
 
 const columns = [
   { label: "Username", key: "username" },
@@ -115,7 +114,7 @@ onMounted(async () => {
 
 <template>
   <Spinner v-if="isLoading" />
-  <Table v-else class="w-1/2 max-w-lg" :columns="columns" :rows="rows" :searchColumns="['username']" addBtn :addBtnAction="() => $refs.btnOpenModal.click()">
+  <Table v-else class="max-w-md" :columns="columns" :rows="rows" :searchColumns="['username']" addBtn :addBtnAction="() => $refs.btnOpenModal.click()">
     <template #is_super="{ data }">
       {{ data.is_super ? "Yes" : "No" }}
     </template>
@@ -128,7 +127,7 @@ onMounted(async () => {
   <Modal id="addModal" ref="addModal">
     <template #title>Add New User</template>
     <template #body>
-      <form class="space-y-4 px-4 py-6" @submit.prevent="submitRegister" novalidate>
+      <form class="space-y-4 px-4 py-6" @submit.prevent="submitRegister">
         <div class="flex flex-row items-baseline">
           <label for="username" class="w-1/4 block mb-2 font-medium text-gray-900">Username</label>
           <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="username" v-model="form.username" required>

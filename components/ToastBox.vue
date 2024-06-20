@@ -9,8 +9,15 @@ defineExpose({
 </script>
 
 <template>
-  <div class="fixed top-5 right-5 min-w-60 space-y-5" v-for="({ type, message, timeout }, i) in toasts">
-    <Toast :id="`toast-${i}`" :type="type" :message="message" :key="`toast-${i}`"></Toast>
+  <div class="fixed top-5 right-5 min-w-60 space-y-5">
+    <Toast
+      :id="`toast-${i}`"
+      :type="type"
+      :message="message"
+      :timeout="timeout"
+      v-for="({ type, message, timeout }, i) in toasts"
+      :key="`toast-${i}`"
+    ></Toast>
   </div>
 </template>
 

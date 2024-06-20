@@ -14,17 +14,15 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
     
     const hexToUint8Array = (hexString : string) => new Uint8Array(
-      hexString.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+      hexString.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)))
 
     const key = hexToUint8Array(config.jwtSecret)
 
     const { payload } = await jose.jwtVerify(cookie.value, key)
-    console.log("PAYLOAD", payload)
 
   } catch (err : any) {
     console.log("ERR", err)
     return navigateTo("/login", { redirectCode: 401 })
-    // return abortNavigation(err)
   }
 
 })
