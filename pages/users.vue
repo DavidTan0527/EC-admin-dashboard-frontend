@@ -10,17 +10,16 @@ if (!cookie?.value) {
   navigateTo("/login", { redirectCode: 401 })
 }
 
+const headers = {
+  "Authorization": "Bearer " + cookie.value
+}
+
+const table = ref(null)
 const columns = [
   { label: "Username", key: "username" },
   { label: "Super User?", key: "is_super" },
   { label: "Actions", key: "actions" },
 ]
-const rows = ref([])
-
-// modal refs
-const addModal = ref(null)
-const btnOpenModal = ref(null)
-const btnModalSubmit = ref(null)
 
 const tb = ref(null)
 
@@ -32,12 +31,11 @@ const form = reactive({
 
 const isLoading = ref(true)
 
+/*
 async function getAllRows() {
   try {
     let res = await $fetch(config.public.apiBase + "/users", {
-      headers: {
-        "Authorization": "Bearer " + cookie.value
-      },
+      headers,
     })
     if (res.success) {
       rows.value = res.data
@@ -48,15 +46,21 @@ async function getAllRows() {
     tb.value.notify({ message: "Something went wrong. Please try again.", type: "error" })
   }
 }
+*/
+
+const { data: userRes, refresh } = await useApiFetch("/users", {
+  headers,
+})
+if (!userRes.value.success) {
+  tb.value.notify({ message: userRes.value.message, type: "error", timeout: 0 })
+}
+isLoading.value = false
 
 async function submitRegister() {
   try {
     let res = await $fetch(config.public.apiBase + "/register", {
       method: "POST",
-      headers: {
-        "Authorization": "Bearer " + cookie.value,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: {
         username: form.username,
         password: form.password,
@@ -66,14 +70,14 @@ async function submitRegister() {
 
     if (res.success) {
       tb.value.notify({ message: res.message, type: "success" })
-      getAllRows()
-      addModal.value.close()
+      refresh()
     } else {
       tb.value.notify({ message: res.message, type: "error", timeout: 0 })
     }
   } catch {
     tb.value.notify({ message: "Something went wrong. Please try again.", type: "error" })
   }
+  table.value.closeModal()
 }
 
 async function deleteRow(row) {
@@ -84,14 +88,12 @@ async function deleteRow(row) {
 
     let res = await $fetch(config.public.apiBase + `/user/${row.id}`, {
       method: "DELETE",
-      headers: {
-        "Authorization": "Bearer " + cookie.value,
-      },
+      headers,
     })
 
     if (res.success) {
       tb.value.notify({ message: res.message, type: "success" })
-      getAllRows()
+      refresh()
     } else {
       tb.value.notify({ message: res.message, type: "error", timeout: 0 })
     }
@@ -106,28 +108,21 @@ function clearForm() {
     form.isSuper = false
 }
 
-onMounted(async () => {
-  await getAllRows()
-  isLoading.value = false
-})
 </script>
 
 <template>
   <Spinner v-if="isLoading" />
-  <Table v-else class="max-w-md" :columns="columns" :rows="rows" :searchColumns="['username']" addBtn :addBtnAction="() => $refs.btnOpenModal.click()">
+  <Table v-else class="max-w-md" :columns="columns" :rows="userRes.data" :searchColumns="['username']" addBtn ref="table">
     <template #is_super="{ data }">
       {{ data.is_super ? "Yes" : "No" }}
     </template>
     <template #actions="{ data }">
       <button class="cursor-pointer font-semibold text-red-500 hover:text-red-400 duration-100" @click="deleteRow(data)">Delete</button>
     </template>
-  </Table>
 
-  <button class="hidden" data-modal-target="addModal" data-modal-toggle="addModal" ref="btnOpenModal" @click="clearForm"></button>
-  <Modal id="addModal" ref="addModal">
-    <template #title>Add New User</template>
-    <template #body>
-      <form class="space-y-4 px-4 py-6" @submit.prevent="submitRegister">
+    <template #modal-title>Add New User</template>
+    <template #modal-body>
+      <form class="space-y-4 p-6" @submit.prevent="submitRegister">
         <div class="flex flex-row items-baseline">
           <label for="username" class="w-1/4 block mb-2 font-medium text-gray-900">Username</label>
           <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="username" v-model="form.username" required>
@@ -147,7 +142,8 @@ onMounted(async () => {
         </div>
       </form>
     </template>
-  </Modal>
+  </Table>
+
 
   <ToastBox ref="tb"></ToastBox>
 </template>

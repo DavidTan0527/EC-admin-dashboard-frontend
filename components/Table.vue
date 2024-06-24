@@ -1,5 +1,11 @@
 <script setup>
+import { initFlowbite } from 'flowbite'
+
 const props = defineProps({
+  id: {
+    type: String,
+    default: "table",
+  },
   columns: {
     type: Array,
     required: true,
@@ -20,10 +26,6 @@ const props = defineProps({
     type: String,
     default: "Add"
   },
-  addBtnAction: {
-    type: Function,
-    default: () => {},
-  },
   searchColumns: {
     type: Array,
     default: [],
@@ -31,19 +33,29 @@ const props = defineProps({
 });
 
 const search = ref("")
-const displayRows = ref([])
+const originalRows = toRef(props, "rows")
+const displayRows = computed(() =>
+  originalRows.value.filter(row => props.searchColumns.some(key => row[key].includes(search.value)))
+)
 
-const triggerRefresh = toRef(props, "rows")
-watch(triggerRefresh, () => {
-  displayRows.value = props.rows
-}, { immediate: true })
+onMounted(() => {
+  initFlowbite()
+})
+
+const modal = ref(null)
+defineExpose({
+  closeModal: () => modal.value.close(),
+})
 
 </script>
 
 <template>
   <div class="table-component">
     <div class="w-full flex flex-row justify-between items-center space-x-2 pb-4">
-      <button class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500 hover:bg-blue-600 duration-100" type="button" v-if="addBtn" @click="addBtnAction">{{ addBtnText }}</button>
+      <button class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500 hover:bg-blue-600 duration-100" type="button" v-if="addBtn"
+        :data-modal-target="id + '-modal'"
+        :data-modal-toggle="id + '-modal'"
+        @click="addBtnTarget === '' ? addBtnAction : () => {}">{{ addBtnText }}</button>
       <div class="bg-white grow" v-if="searchColumns.length > 0">
         <label for="table-search" class="sr-only">Search</label>
         <div class="relative">
@@ -57,7 +69,6 @@ watch(triggerRefresh, () => {
             class="block py-2 ps-10 text-sm text-gray-900 border border-gray-300 w-full rounded-lg bg-white focus:ring-blue-500 focus:border-blue-500"
             placeholder="Search for items"
             v-model="search"
-            @input="() => displayRows = props.rows.filter(row => props.searchColumns.some(key => row[key].includes(search)))"
           >
         </div>
       </div>
@@ -78,5 +89,14 @@ watch(triggerRefresh, () => {
         </tr>
       </tbody>
     </table>
+
+    <Modal :id="id + '-modal'" ref="modal">
+      <template #title>
+        <slot name="modal-title"></slot>
+      </template>
+      <template #body>
+        <slot name="modal-body"></slot>
+      </template>
+    </Modal>
   </div>
 </template>

@@ -27,7 +27,6 @@ const btnClose = ref(null)
 
 onMounted(() => {
   initFlowbite()
-  console.log(props.timeout)
   if (props.timeout > 0) {
     setTimeout(() => {
       btnClose.value.click()

@@ -15,19 +15,23 @@ const cookie = useCookie("ec-t", { maxAge: 3 * 24 * 60 * 60 })
 
 async function submitLogin() {
   isLoading.value = true
-  let res = await $fetch(config.public.apiBase + '/login', {
-    method: 'POST',
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: { username: username.value, password: password.value },
-  })
+  try {
+    let res = await $fetch(config.public.apiBase + '/login', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: { username: username.value, password: password.value },
+    })
 
-  if (res.success) {
-    cookie.value = res.data
-    await navigateTo("/landing")
-  } else {
-    tb.value.notify({ message: res.message, type: "error" })
+    if (res.success) {
+      cookie.value = res.data
+      await navigateTo("/landing")
+    } else {
+      tb.value.notify({ message: res.message, type: "error" })
+    }
+  } catch (err) {
+    tb.value.notify({ message: err, type: "error", timeout: 0 })
   }
 
   isLoading.value = false
@@ -55,7 +59,7 @@ async function submitLogin() {
       </div>
       <div class="relative z-0 w-full group">
         <input
-          type="text"
+          type="password"
           name="password"
           id="password"
           class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"

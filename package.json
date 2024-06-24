@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "ag-grid-vue3": "^31.3.2",
     "feather-icons": "^4.29.2",
     "flowbite": "^2.3.0",
     "jose": "^5.4.0",

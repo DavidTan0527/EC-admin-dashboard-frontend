@@ -9,10 +9,6 @@ const props = defineProps({
   },
 });
 
-onMounted(() => {
-  initFlowbite()
-})
-
 defineExpose({
   close: () => btnClose.value.click()
 })

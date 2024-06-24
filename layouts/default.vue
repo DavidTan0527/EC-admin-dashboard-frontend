@@ -17,10 +17,6 @@ function logout() {
   cookie.value = null
   navigateTo("/login")
 }
-
-onMounted(() => {
-  feather.replace()
-})
 </script>
 
 <template>
