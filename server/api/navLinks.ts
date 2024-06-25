@@ -28,15 +28,15 @@ export default defineEventHandler(async (event: H3Event) => {
       return []
     }
 
-    let tables : String[] = res.data
+    let tables : { id: string, name: string }[] = res.data
 
     let links = [
       { label: "Home", href: "/landing", icon: "home" },
       { label: "Data", icon: "pie-chart",
         children: [
           { label: "Overall", href: "/data", icon: "list" },
-          ...tables.map(name => (
-            { label: name, href: `/data/${name}`, icon: "table" }
+          ...tables.map(table => (
+            { label: table.name, href: `/data/${table.id}`, icon: "table" }
           )),
         ],
       },

@@ -31,29 +31,17 @@ const form = reactive({
 
 const isLoading = ref(true)
 
-/*
-async function getAllRows() {
-  try {
-    let res = await $fetch(config.public.apiBase + "/users", {
-      headers,
-    })
-    if (res.success) {
-      rows.value = res.data
-    } else {
-      tb.value.notify({ message: res.message, type: "error", timeout: 0 })
-    }
-  } catch {
-    tb.value.notify({ message: "Something went wrong. Please try again.", type: "error" })
+try {
+  const { data: userRes, refresh } = await useApiFetch("/users", {
+    headers,
+  })
+  if (!userRes.value.success) {
+    tb.value.notify({ message: userRes.value.message, type: "error", timeout: 0 })
   }
+} catch (err) {
+  tb.value.notify({ message: err, type: "error", timeout: 0 })
 }
-*/
 
-const { data: userRes, refresh } = await useApiFetch("/users", {
-  headers,
-})
-if (!userRes.value.success) {
-  tb.value.notify({ message: userRes.value.message, type: "error", timeout: 0 })
-}
 isLoading.value = false
 
 async function submitRegister() {

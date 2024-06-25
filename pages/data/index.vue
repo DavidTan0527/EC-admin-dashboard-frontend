@@ -35,7 +35,7 @@ const { data: tableReq, refresh } = await useApiFetch("/table", {
 isLoading.value = false
 
 async function submitAdd() {
-  if (tableReq.value.data.includes(form.name)) {
+  if (tableReq.value.data.some(tab => tab.name === form.name)) {
     tb.notify({ type: "error", message: `Table with name ${form.name} already exists!` })
     return
   }
@@ -64,21 +64,18 @@ async function submitAdd() {
   table.value.closeModal()
 }
 
+let editTableId = ""
 async function submitEdit() {
-  if (tableReq.value.data.includes(editForm.name)) {
+  if (tableReq.value.data.some(tab => tab.name === editForm.name)) {
     tb.notify({ type: "error", message: `Table with name ${editForm.name} already exists!` })
     return
   }
 
   try {
-    const res = await $fetch(config.public.apiBase + "/table", {
-      method: "POST",
+    const res = await $fetch(`${config.public.apiBase }/table/${editTableId}`, {
+      method: "PUT",
       headers,
-      body: {
-        name: form.name,
-        fields: [],
-        rows: [],
-      },
+      body: { name: editForm.name },
     })
 
     if (res.success) {
@@ -91,15 +88,30 @@ async function submitEdit() {
     tb.value.notify({ message: err, type: "error" })
   }
 
-  table.value.closeModal()
+  editModal.value.close()
 }
 
 function editRow(row) {
-  console.log("edit", row)
+  editForm.name = row.name
+  editTableId = row.id
 }
 
-function deleteRow(row) {
-  console.log("delete", row)
+async function deleteRow(row) {
+  try {
+    let res = await $fetch(`${config.public.apiBase }/table/${row.id}`, {
+      method: "DELETE",
+      headers,
+    })
+
+    if (res.success) {
+      tb.value.notify({ message: res.message, type: "success" })
+      refresh()
+    } else {
+      tb.value.notify({ message: res.message, type: "error", timeout: 0 })
+    }
+  } catch {
+    tb.value.notify({ message: "Something went wrong. Please try again.", type: "error" })
+  }
 }
 
 </script>
@@ -111,7 +123,7 @@ function deleteRow(row) {
       v-else
       class="max-w-md"
       :columns="columns"
-      :rows="tableReq.data.map(el => ({ name: el })) ?? []"
+      :rows="tableReq.data ?? []"
       :searchColumns="['name']"
       addBtn
       ref="table"
@@ -122,7 +134,7 @@ function deleteRow(row) {
       <template #actions="{ data }">
         <button
           class="cursor-pointer font-semibold text-amber-300 hover:text-amber-200 duration-100 mr-2"
-          @click="editForm.name = data.name"
+          @click="editRow(data)"
           data-modal-target="editModal"
           data-modal-toggle="editModal"
         >
@@ -149,7 +161,7 @@ function deleteRow(row) {
   <Modal id="editModal" ref="editModal">
     <template #title>Rename</template>
     <template #body>
-      <form class="space-y-4 p-6" @submit.prevent="submitAdd">
+      <form class="space-y-4 p-6" @submit.prevent="submitEdit">
         <div class="flex flex-row items-baseline">
           <label for="name" class="w-1/4 block mb-2 font-medium text-gray-900">Name</label>
           <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="username" v-model="editForm.name" required>

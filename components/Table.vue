@@ -26,6 +26,10 @@ const props = defineProps({
     type: String,
     default: "Add"
   },
+  addBtnAction: {
+    type: Object,
+    default: () => {},
+  },
   searchColumns: {
     type: Array,
     default: [],
@@ -90,7 +94,7 @@ defineExpose({
       </tbody>
     </table>
 
-    <Modal :id="id + '-modal'" ref="modal">
+    <Modal v-if="addBtn" :id="id + '-modal'" ref="modal">
       <template #title>
         <slot name="modal-title"></slot>
       </template>

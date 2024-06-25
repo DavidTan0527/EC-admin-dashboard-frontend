@@ -159,7 +159,7 @@ watch(isLoading, (_) => {
     <div class="block mb-2 text-sm font-medium text-gray-500">* Unused permissions will automatically be deleted</div>
 
     <hr class="h-px my-8 bg-gray-200 border-0">
-
+    {{ $router.options.routes }}
     <Table class="max-w-md" :columns="columns" :rows="reqUsers.data" :searchColumns="['username']">
       <template #actions="{ data }">
         <input
