@@ -25,4 +25,7 @@ export default defineNuxtConfig({
       apiBase: '/api'
     }
   },
+  experimental: {
+    renderJsonPayloads: false,
+  },
 })

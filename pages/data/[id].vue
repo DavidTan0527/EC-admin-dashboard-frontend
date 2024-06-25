@@ -77,6 +77,8 @@ function submitAddCol() {
       }
     }
     colDefs.value.push(col)
+    gridApi.value.setGridOption("columnDefs", colDefs.value);
+    save()
   } catch (err) {
     tb.notify({ type: "error", message: err })
   }
@@ -199,7 +201,7 @@ const save = debounce(async () => {
     })
 
     if (res.success) {
-      tb.value.notify({ message: res.message, type: "success" })
+      tb.value.notify({ message: res.message, type: "success", timeout: 1200 })
     } else {
       tb.value.notify({ message: res.message, type: "error", timeout: 0 })
     }
@@ -215,13 +217,13 @@ function log() {
 
 onMounted(() => {
   feather.replace()
-  initFlowbite()
+  initModals()
 })
 </script>
 
 <template>
-  <h2 class="text-2xl">{{ tableRes.data.name }}</h2>
-  <div class="flex flex-row">
+  <h2 class="text-2xl mb-2">Name: {{ tableRes.data.name }}</h2>
+  <div class="flex flex-row mb-1">
     <button
       type="button"
       class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
@@ -249,6 +251,7 @@ onMounted(() => {
 
     autoHeaderHeight
     wrapHeaderText
+    :autoSizeStrategy="{ type: 'fitCellContents' }"
 
     animateRows
     rowDragEntireRow
@@ -329,13 +332,18 @@ onMounted(() => {
             </select>
           </div>
           <div class="flex flex-row items-baseline" v-if="form.type === 'agSelectCellEditor'">
-            <label class="flex flex-row items-center w-1/3 block mb-2 font-medium text-gray-900">
+            <label class="flex flex-col space-y-1 items-start w-1/3 block mb-2 font-medium text-gray-900">
               Select Options
-              <span class="hover:text-blue-500" @click="() => form.selectOptions.push('')">
-                <i class="w-5 h-5 ml-2 cursor-pointer" data-feather="plus-circle"></i>
+              <span class="flex flex-row space-x-2">
+                <span class="hover:text-green-500" @click="() => form.selectOptions.push('')">
+                  <i class="w-5 h-5 ml-2 cursor-pointer" data-feather="plus-circle"></i>
+                </span>
+                <span class="hover:text-red-500" @click="() => form.selectOptions.pop()">
+                  <i class="w-5 h-5 ml-2 cursor-pointer" data-feather="minus-circle"></i>
+                </span>
               </span>
             </label>
-            <div class="w-2/3 flex flex-col space-y-2">
+            <div class="w-2/3 flex flex-col space-y-1">
               <input
                 type="text"
                 class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2"
