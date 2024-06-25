@@ -10,7 +10,7 @@ const props = defineProps({
 const route = useRoute()
 
 function isActive(url) {
-  return route.path === url
+  return route.path.replace(/\/$/, '') === url.replace(/\/$/, '')
 }
 
 onMounted(() => {

@@ -31,10 +31,12 @@ const form = reactive({
 
 const isLoading = ref(true)
 
+let userRes, refresh
 try {
-  const { data: userRes, refresh } = await useApiFetch("/users", {
+  ({ data: userRes, refresh } = await useApiFetch("/users", {
     headers,
-  })
+  }))
+
   if (!userRes.value.success) {
     tb.value.notify({ message: userRes.value.message, type: "error", timeout: 0 })
   }

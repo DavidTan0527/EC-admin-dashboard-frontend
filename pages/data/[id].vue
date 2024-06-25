@@ -1,3 +1,5 @@
+<script>
+</script>
 <script setup>
 import { AgGridVue } from "ag-grid-vue3";
 const route = useRoute()
@@ -14,6 +16,19 @@ const headers = {
 
 const tb = ref(null)
 
+const dateFormatter = (params) => {
+  if (!params.value) {
+    return "";
+  }
+  let value = params.value
+  if (typeof value === "string") {
+    value = new Date(value)
+  }
+  const month = value.getMonth() + 1;
+  const day = value.getDate();
+  return `${value.getFullYear()}-${month < 10 ? "0" + month : month}-${day < 10 ? "0" + day : day}`;
+}
+
 /*** Start of Modal ***/
 const addColModal = ref(null)
 const formulaInput = ref(null)
@@ -24,6 +39,7 @@ const form = reactive({
   isFormula: ref(false),
   formula: ref(""),
   type: ref(""),
+  selectOptions: ref([]),
 })
 
 watch(
@@ -37,6 +53,7 @@ function clearForm() {
   form.isFormula = false
   form.formula = ""
   form.type = ""
+  form.selectOptions = []
 }
 
 function addFormulaTerm(field) {
@@ -44,14 +61,6 @@ function addFormulaTerm(field) {
   formulaInput.value.focus()
 }
 
-function dateFormatter(params) {
-  if (!params.value) {
-    return "";
-  }
-  const month = params.value.getMonth() + 1;
-  const day = params.value.getDate();
-  return `${params.value.getFullYear()}-${month < 10 ? "0" + month : month}-${day < 10 ? "0" + day : day}`;
-}
 
 function submitAddCol() {
   try {
@@ -62,7 +71,9 @@ function submitAddCol() {
     } else {
       col = { ...col, cellEditor: form.type, editable: true }
       if (form.type === "agDateCellEditor") {
-        col = { ...col, valueFormatter: dateFormatter }
+        col.valueFormatter = dateFormatter
+      } else if (form.type === "agSelectCellEditor") {
+        col.cellEditorParams = { values: form.selectOptions }
       }
     }
     colDefs.value.push(col)
@@ -72,6 +83,9 @@ function submitAddCol() {
   addColModal.value.close()
 }
 
+watch(
+  () => form.type,
+  () => nextTick().then(feather.replace))
 /*** End of Modal ***/
 
 
@@ -79,35 +93,46 @@ function submitAddCol() {
 const rowData = ref([])
 const colDefs = ref([])
 
+let tableRes
+
 try {
-  const { data: tableRes } = await useApiFetch(`/table/${route.params.id}`, {
+  ({ data: tableRes } = await useApiFetch(`/table/${route.params.id}`, {
     headers,
-  })
+  }))
+
   if (!tableRes.value.success) {
-    tb.value.notify({ message: userRes.value.message, type: "error", timeout: 0 })
+    tb.value.notify({ message: tableRes.value.message, type: "error", timeout: 0 })
   }
 } catch (err) {
   tb.value.notify({ message: err, type: "error", timeout: 0 })
 }
 
-rowData.value = tableRes.value.data.rows
 colDefs.value = tableRes.value.data.fields
 colDefs.value.map((e, i) => {
-  if ("formula" in e) {
-    e = { ...e, valueGetter: ({ data }) => eval(e.formula) }
-  }
-
-  if (e.cellEditor === "agDateCellEditor") {
-    e = { ...e, valueFormatter: dateFormatter }
-  }
-
   e.editable = !('formula' in e)
   e.rowDrag = i === 0
 })
 
+colDefs.value
+  .map((e, i) => ({ e, i }))
+  .filter(({ e, i }) => "formula" in e)
+  .forEach(({ e, i }) => colDefs.value[i].valueGetter = ({ data }) => eval(e.formula))
+
+colDefs.value
+  .map((e, i) => ({ e, i }))
+  .filter(({ e, i }) => e.cellEditor === "agDateCellEditor")
+  .forEach(({ e, i }) => {
+    colDefs.value[i].cellDataType = "date"
+    colDefs.value[i].valueFormatter = dateFormatter
+  })
+
+rowData.value = tableRes.value.data.rows
+
 const gridApi = ref(null)
 function onGridReady(params) {
   gridApi.value = params.api
+  gridApi.value.setGridOption("rowData", rowData.value);
+  gridApi.value.setGridOption("columnDefs", colDefs.value);
 }
 
 let sortActive = false, filterActive = false
@@ -163,8 +188,6 @@ function addRow() {
 /*** End of Table ***/
 
 const save = debounce(async () => {
-  console.log("colDefs", colDefs.value)
-  console.table(rowData.value)
   try {
     let res = await $fetch(`${config.public.apiBase}/table/${route.params.id}`, {
       method: "POST",
@@ -218,11 +241,8 @@ onMounted(() => {
       Column
     </button>
   </div>
-  <button type="button" class="text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2" @click="log">Test</button>
   <AgGridVue
     @grid-ready="onGridReady"
-    :rowData="rowData"
-    :columnDefs="colDefs"
     :defaultColDefs="{
       singleClickEdit: true,
     }"
@@ -253,6 +273,8 @@ onMounted(() => {
     ref="grid"
   >
   </AgGridVue>
+
+  <!-- Add Column Modal -->
 
   <Modal id="addColModal" ref="addColModal">
     <template #title>Add New Column</template>
@@ -295,14 +317,33 @@ onMounted(() => {
             required
             ref="formulaInput">
         </div>
-        <div class="flex flex-row items-baseline" v-else>
-          <label for="name" class="w-1/3 block mb-2 font-medium text-gray-900">Type</label>
-          <select id="countries" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" v-model="form.type">
-            <option value="agTextCellEditor">Text</option>
-            <option value="agNumberCellEditor">Number</option>
-            <option value="agDateCellEditor">Date</option>
-            <option value="agCheckboxCellEditor">Checkbox</option>
-          </select>
+        <div class="space-y-4" v-else>
+          <div class="flex flex-row items-baseline">
+            <label for="name" class="w-1/3 block mb-2 font-medium text-gray-900">Type</label>
+            <select id="countries" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.type">
+              <option value="agTextCellEditor">Text</option>
+              <option value="agNumberCellEditor">Number</option>
+              <option value="agSelectCellEditor">Select</option>
+              <option value="agDateCellEditor">Date</option>
+              <option value="agCheckboxCellEditor">Checkbox</option>
+            </select>
+          </div>
+          <div class="flex flex-row items-baseline" v-if="form.type === 'agSelectCellEditor'">
+            <label class="flex flex-row items-center w-1/3 block mb-2 font-medium text-gray-900">
+              Select Options
+              <span class="hover:text-blue-500" @click="() => form.selectOptions.push('')">
+                <i class="w-5 h-5 ml-2 cursor-pointer" data-feather="plus-circle"></i>
+              </span>
+            </label>
+            <div class="w-2/3 flex flex-col space-y-2">
+              <input
+                type="text"
+                class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2"
+                v-model="form.selectOptions[i]"
+                v-for="(_, i) in form.selectOptions"
+                required>
+            </div>
+          </div>
         </div>
         <div class="flex flex-row justify-end">
           <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>
