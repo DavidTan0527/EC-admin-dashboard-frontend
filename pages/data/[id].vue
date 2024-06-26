@@ -1,5 +1,3 @@
-<script>
-</script>
 <script setup>
 import { AgGridVue } from "ag-grid-vue3";
 const route = useRoute()
@@ -61,7 +59,6 @@ function addFormulaTerm(field) {
   formulaInput.value.focus()
 }
 
-
 function submitAddCol() {
   try {
     let col = { headerName: form.name, field: form.field, rowDrag: colDefs.value.length === 0 }
@@ -111,6 +108,7 @@ try {
 
 colDefs.value = tableRes.value.data.fields
 colDefs.value.map((e, i) => {
+  e.filter = true
   e.editable = !('formula' in e)
   e.rowDrag = i === 0
 })
@@ -129,12 +127,33 @@ colDefs.value
   })
 
 rowData.value = tableRes.value.data.rows
+function getSumByCols() {
+  const canSum = col => col.cellEditor === "agNumberCellEditor"
+  const targetFields = colDefs.value.filter(e => canSum(e)).map(e => e.field)
+  let res = {}
+  for (const field of targetFields) {
+    res[field] = 0
+  }
+
+  gridApi.value.forEachNodeAfterFilter(({ data: row }) => {
+    row ??= {}
+    for (const field of targetFields) {
+      res[field] += row[field] ?? 0
+    }
+  })
+
+  if (colDefs.value.length > 0) {
+    res[colDefs.value[0].field] = "SUM"
+  }
+    
+  return [res]
+}
 
 const gridApi = ref(null)
 function onGridReady(params) {
   gridApi.value = params.api
-  gridApi.value.setGridOption("rowData", rowData.value);
   gridApi.value.setGridOption("columnDefs", colDefs.value);
+  gridApi.value.setGridOption("pinnedBottomRowData", getSumByCols())
 }
 
 let sortActive = false, filterActive = false
@@ -149,6 +168,7 @@ function onFilterChanged() {
   filterActive = gridApi.value.isAnyFilterPresent();
   let suppressRowDrag = sortActive || filterActive;
   gridApi.value.setGridOption("suppressRowDrag", suppressRowDrag);
+  gridApi.value.setGridOption("pinnedBottomRowData", getSumByCols())
 }
 
 function onRowDragMove(event) {
@@ -164,6 +184,10 @@ function onRowDragMove(event) {
 
     let fromIndex = rowData.value.indexOf(movingData);
     let toIndex = rowData.value.indexOf(overData);
+
+    if (fromIndex === -1 || toIndex === -1)
+      return
+
     rowData.value[toIndex] = movingData;
     rowData.value[fromIndex] = overData;
     gridApi.value.setGridOption("rowData", rowData.value);
@@ -172,7 +196,7 @@ function onRowDragMove(event) {
 }
 
 function onDragStopped(params) {
-  const cols = params.columnApi.getAllDisplayedColumns()
+  const cols = params.api.getAllDisplayedColumns()
   colDefs.value = colDefs.value
     .sort((a, b) => cols.findIndex(col => col.colId === a.field) - cols.findIndex(col => col.colId === b.field))
     .map((e, i) => ({ ...e, rowDrag: i === 0 }))
@@ -180,23 +204,34 @@ function onDragStopped(params) {
 }
 
 function onCellEditingStopped() {
+  gridApi.value.setGridOption("pinnedBottomRowData", getSumByCols())
   save()
 }
 
 function addRow() {
-  rowData.value.push({})
-  gridApi.value.setGridOption("rowData", rowData.value);
+  const res = gridApi.value.applyTransaction({ add: [{}] });
+  save()
+}
+
+function removeSelectedRow() {
+  const selectedData = gridApi.value.getSelectedRows();
+  const res = gridApi.value.applyTransaction({ remove: selectedData });
+  save()
 }
 /*** End of Table ***/
 
+
 const save = debounce(async () => {
   try {
+    const rows = []
+    gridApi.value.forEachNode(({ data }) => rows.push(data))
+
     let res = await $fetch(`${config.public.apiBase}/table/${route.params.id}`, {
       method: "POST",
       headers,
       body: {
         fields: colDefs.value,
-        rows: rowData.value,
+        rows,
       },
     })
 
@@ -211,10 +246,6 @@ const save = debounce(async () => {
 }, 3000)
 
 
-function log() {
-  onCellEditingStopped()
-}
-
 onMounted(() => {
   feather.replace()
   initModals()
@@ -223,62 +254,74 @@ onMounted(() => {
 
 <template>
   <h2 class="text-2xl mb-2">Name: {{ tableRes.data.name }}</h2>
-  <div class="flex flex-row mb-1">
-    <button
-      type="button"
-      class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
-      @click="addRow"
+  <div class="flex flex-col space-y-4">
+    <div class="flex flex-row mb-1">
+      <button
+        type="button"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        @click="addRow"
+      >
+        <i class="w-4 h-4 me-1" data-feather="plus"></i>
+        Row
+      </button>
+      <button
+        type="button"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        data-modal-target="addColModal"
+        data-modal-toggle="addColModal"
+        @click="clearForm"
+      >
+        <i class="w-4 h-4 me-1" data-feather="plus"></i>
+        Column
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        @click="removeSelectedRow"
+      >
+        <i class="w-4 h-4 me-1" data-feather="minus"></i>
+        Selected Row
+      </button>
+    </div>
+
+    <AgGridVue
+      @grid-ready="onGridReady"
+      :rowData="rowData"
+
+      autoHeaderHeight
+      wrapHeaderText
+      :autoSizeStrategy="{
+        type: 'fitGridWidth',
+      }"
+
+      animateRows
+      rowDragEntireRow
+      @sort-changed="onSortChanged"
+      @filter-changed="onFilterChanged"
+      @row-drag-move="onRowDragMove"
+
+      @drag-stopped="onDragStopped"
+
+      stopEditingWhenCellsLoseFocus
+      @cell-editing-stopped="onCellEditingStopped"
+
+      enterNavigatesVertically
+      enterNavigatesVerticallyAfterEdit
+
+      rowSelection="multiple"
+
+      domLayout="autoHeight"
+      style="overflow-x: auto;"
+      class="ag-theme-quartz"
+
+      ref="grid"
     >
-      <i class="w-4 h-4 me-1" data-feather="plus"></i>
-      Row
-    </button>
-    <button
-      type="button"
-      class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
-      data-modal-target="addColModal"
-      data-modal-toggle="addColModal"
-      @click="clearForm"
-    >
-      <i class="w-4 h-4 me-1" data-feather="plus"></i>
-      Column
-    </button>
+    </AgGridVue>
+
   </div>
-  <AgGridVue
-    @grid-ready="onGridReady"
-    :defaultColDefs="{
-      singleClickEdit: true,
-    }"
-
-    autoHeaderHeight
-    wrapHeaderText
-    :autoSizeStrategy="{ type: 'fitCellContents' }"
-
-    animateRows
-    rowDragEntireRow
-    @sort-changed="onSortChanged"
-    @filter-changed="onFilterChanged"
-    @row-drag-move="onRowDragMove"
-
-    @drag-stopped="onDragStopped"
-
-    stopEditingWhenCellsLoseFocus
-    @cell-editing-stopped="onCellEditingStopped"
-
-    enterNavigatesVertically
-    enterNavigatesVerticallyAfterEdit
-
-    rowSelection="multiple"
-
-    domLayout="autoHeight"
-    style="overflow-x: auto;"
-    class="ag-theme-quartz"
-
-    ref="grid"
-  >
-  </AgGridVue>
 
   <!-- Add Column Modal -->
-
   <Modal id="addColModal" ref="addColModal">
     <template #title>Add New Column</template>
     <template #body>
@@ -362,3 +405,10 @@ onMounted(() => {
 
   <ToastBox ref="tb"></ToastBox>
 </template>
+
+<style>
+.ag-floating-bottom-container .ag-row {
+    background-color: var(--ag-header-background-color);
+}
+</style>
+
