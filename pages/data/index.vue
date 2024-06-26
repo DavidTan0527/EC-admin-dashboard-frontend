@@ -7,7 +7,7 @@ if (!cookie?.value) {
 }
 
 const headers = {
-  "Authorization": "Bearer " + cookie.value
+  "Authorization": "Bearer " + cookie.value,
 }
 
 const isLoading = ref(true)
@@ -28,7 +28,7 @@ const editForm = reactive({
   name: ref(""),
 })
 
-const { data: tableReq, refresh } = await useApiFetch("/table", {
+const { data: tableReq, refresh } = await useApiFetch("/table/schema", {
   headers,
 })
 

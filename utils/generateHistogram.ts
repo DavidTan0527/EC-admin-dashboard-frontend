@@ -2,10 +2,10 @@ interface DataItem {
   [key: string]: any // Allows for any additional fields
 }
 
-export default function (data: DataItem[], categoryField: keyof DataItem, itemField? : keyof DataItem): { labels: string[], counts: number[] } {
+export default function (input: DataItem[], categoryField: keyof DataItem, itemField? : keyof DataItem): { labels: string[], data: number[] } {
   const histogram: Record<string, number> = {}
 
-  data.forEach(item => {
+  input.forEach(item => {
     const category = item[categoryField]
     if (category in histogram) {
       histogram[category] += typeof(itemField) !== 'undefined' ? (item[itemField!] ?? 0) : 1
@@ -15,8 +15,8 @@ export default function (data: DataItem[], categoryField: keyof DataItem, itemFi
   })
 
   const labels = Object.keys(histogram)
-  const counts = Object.values(histogram)
+  const data = Object.values(histogram)
 
-  return { labels, counts }
+  return { labels, data }
 }
 
