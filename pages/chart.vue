@@ -80,6 +80,24 @@ async function submit() {
   table.value.closeModal()
 }
 
+async function deleteRow(row) {
+  try {
+    const res = await $fetch(`${config.public.apiBase}/chart/${row.id}`, {
+      method: "DELETE",
+      headers,
+    })
+
+    if (res.success) {
+      tb.value.notify({ message: res.message, type: "success" })
+      refresh()
+    } else {
+      tb.value.notify({ message: res.message, type: "error", timeout: 0 })
+    }
+  } catch {
+    tb.value.notify({ message: "Something went wrong. Please try again.", type: "error" })
+  }
+}
+
 </script>
 
 <template>

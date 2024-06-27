@@ -15,36 +15,30 @@ definePageMeta({
   permissionKey: "DAT_ALL",
 })
 
-let { data: tableRes } = await useApiFetch("/table/667aa56b53e0b04990a0c2d8", {
+const { data: chartReq } = await useApiFetch("/chart", {
   headers,
 })
 
-if (!tableRes.value.success) {
-  tb.value.notify({ message: tableRes.value.message, type: "error", timeout: 0 })
-}
+let tableIds = [...new Set(chartReq.value.data.map(c => c.tableId))]
+let tableResponses = await Promise.all(tableIds.map(id => useApiFetch(`/table/${id}`, { headers })))
+let tableData = tableResponses.map(({ data : { value: { success, data } } }, i) => [tableIds[i], data])
+let tableDataMap = Object.fromEntries(tableData)
 
 </script>
 
 <template>
-  <div class="grid gap-4 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3">
+  <div class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
     <Graph
-      class="border border-gray-100 drop-shadow-lg bg-white p-4 rounded-lg min-h-60"
-      type="pie"
-      title="Percentage of Office Claims"
-      :table="tableRes.data"
-      xField="CATEGORIES"
-      showDatalabels
-      showPercentage
-    >
-    </Graph>
-    <Graph
-      class="border border-gray-100 drop-shadow-lg bg-white p-4 rounded-lg min-h-60"
-      type="bar"
-      title="Claim Amount per Category"
-      :table="tableRes.data"
-      xField="CATEGORIES"
-      yField="TOTALRM"
-      showDatalabels
+      v-for="chart in chartReq.data"
+      :key="chart.id"
+      class="border border-gray-100 drop-shadow-lg bg-white p-4 rounded-lg h-72"
+      :type="chart.type"
+      :title="chart.title"
+      :table="tableDataMap[chart.tableId]"
+      :xField="chart.options.xField"
+      :yField="chart.options.yField"
+      :showDatalabels="chart.options.showDatalabels"
+      :showPercentage="chart.options.showPercentage"
     >
     </Graph>
   </div>
