@@ -141,9 +141,7 @@ watch(isLoading, (_) => {
           v-model="selectedPermKey"
           @change="getPermUserList"
         >
-          <template v-for="key in reqPermKeys.data" :key="key">
-            <option :value="key">{{ key }}</option>
-          </template>
+          <option v-for="key in reqPermKeys.data" :key="key" :value="key">{{ key }}</option>
         </select>
         <button
           data-modal-target="popup-modal"

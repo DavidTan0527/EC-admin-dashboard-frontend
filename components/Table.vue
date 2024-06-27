@@ -22,13 +22,17 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  addModal: {
+    type: Boolean,
+    default: false,
+  },
+  addBtnAction: {
+    type: Function,
+    default: () => {},
+  },
   addBtnText: {
     type: String,
     default: "Add"
-  },
-  addBtnAction: {
-    type: Object,
-    default: () => {},
   },
   searchColumns: {
     type: Array,
@@ -42,12 +46,16 @@ const displayRows = computed(() =>
   originalRows.value.filter(row => props.searchColumns.some(key => row[key].includes(search.value)))
 )
 
-onMounted(() => {
-  initFlowbite()
-})
-
 const modal = ref(null)
+function onAddBtnClick() {
+  props.addBtnAction()
+  if (props.addModal) {
+    modal.value.open()
+  }
+}
+
 defineExpose({
+  openModal: () => modal.value.open(),
   closeModal: () => modal.value.close(),
 })
 
@@ -56,10 +64,14 @@ defineExpose({
 <template>
   <div class="table-component">
     <div class="w-full flex flex-row justify-between items-center space-x-2 pb-4">
-      <button class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500 hover:bg-blue-600 duration-100" type="button" v-if="addBtn"
-        :data-modal-target="id + '-modal'"
-        :data-modal-toggle="id + '-modal'"
-        @click="addBtnTarget === '' ? addBtnAction : () => {}">{{ addBtnText }}</button>
+      <button
+        class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500 hover:bg-blue-600 duration-100"
+        type="button"
+        v-if="addBtn"
+        @click="onAddBtnClick"
+      >
+        {{ addBtnText }}
+      </button>
       <div class="bg-white grow" v-if="searchColumns.length > 0">
         <label for="table-search" class="sr-only">Search</label>
         <div class="relative">
@@ -94,7 +106,7 @@ defineExpose({
       </tbody>
     </table>
 
-    <Modal v-if="addBtn" :id="id + '-modal'" ref="modal">
+    <Modal v-if="addModal" :id="id + '-modal'" ref="modal">
       <template #title>
         <slot name="modal-title"></slot>
       </template>

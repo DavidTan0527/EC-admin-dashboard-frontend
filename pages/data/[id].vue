@@ -331,8 +331,8 @@ onMounted(() => {
           <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="name" v-model="form.name" required>
         </div>
         <div class="flex flex-row items-baseline">
-          <label for="name" class="w-1/3 block mb-2 font-medium text-gray-900">Field</label>
-          <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="name" v-model="form.field" required>
+          <label for="field" class="w-1/3 block mb-2 font-medium text-gray-900">Field</label>
+          <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="field" v-model="form.field" required>
         </div>
         <label class="inline-flex items-center cursor-pointer">
           <input type="checkbox" value="" class="sr-only peer" v-model="form.isFormula">
@@ -365,8 +365,8 @@ onMounted(() => {
         </div>
         <div class="space-y-4" v-else>
           <div class="flex flex-row items-baseline">
-            <label for="name" class="w-1/3 block mb-2 font-medium text-gray-900">Type</label>
-            <select id="countries" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.type">
+            <label for="type" class="w-1/3 block mb-2 font-medium text-gray-900">Type</label>
+            <select id="type" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.type">
               <option value="agTextCellEditor">Text</option>
               <option value="agNumberCellEditor">Number</option>
               <option value="agSelectCellEditor">Select</option>

@@ -164,7 +164,7 @@ async function deleteRow(row) {
       <form class="space-y-4 p-6" @submit.prevent="submitEdit">
         <div class="flex flex-row items-baseline">
           <label for="name" class="w-1/4 block mb-2 font-medium text-gray-900">Name</label>
-          <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="username" v-model="editForm.name" required>
+          <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="name" v-model="editForm.name" required>
         </div>
         <div class="flex flex-row justify-end">
           <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>

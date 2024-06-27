@@ -1,5 +1,6 @@
 <script setup>
 import { initFlowbite } from 'flowbite'
+const btnOpen = ref(null)
 const btnClose = ref(null)
 
 const props = defineProps({
@@ -9,8 +10,17 @@ const props = defineProps({
   },
 });
 
+onMounted(() => {
+  initModals()
+})
+
+onUpdated(() => {
+  initModals()
+})
+
 defineExpose({
-  close: () => btnClose.value.click()
+  open: () => btnOpen.value.click(),
+  close: () => btnClose.value.click(),
 })
 </script>
 
@@ -41,5 +51,6 @@ defineExpose({
       </div>
     </div>
   </div>
+  <button class="hidden" :data-modal-target="id" :data-modal-show="id" ref="btnOpen"></button>
 </template>
 

@@ -32,6 +32,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     let links = [
       { label: "Home", href: "/landing", icon: "home" },
+      { label: "Chart", href: "/chart", icon: "bar-chart-2" },
       { label: "Data", icon: "database",
         children: [
           { label: "Overall", href: "/data", icon: "list" },

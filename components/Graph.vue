@@ -24,6 +24,10 @@ const props = defineProps({
     type: String,
     default: undefined,
   },
+  xLabel: {
+    type: String,
+    default: "",
+  },
   yLabel: {
     type: String,
     default: "",
@@ -46,6 +50,10 @@ const options = ref({
       display: props.type === "line" || props.type === "bar",
       grid: {
         display: false,
+      },
+      title: {
+        display: props.xLabel !== "",
+        text: props.xLabel,
       },
     },
     y: {

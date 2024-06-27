@@ -102,7 +102,7 @@ function clearForm() {
 
 <template>
   <Spinner v-if="isLoading" />
-  <Table v-else class="max-w-md" :columns="columns" :rows="userRes.data" :searchColumns="['username']" addBtn ref="table">
+  <Table v-else class="max-w-md" :columns="columns" :rows="userRes.data" :searchColumns="['username']" addBtn addModal ref="table">
     <template #is_super="{ data }">
       {{ data.is_super ? "Yes" : "No" }}
     </template>
