@@ -11,7 +11,7 @@ if (!cookie?.value) {
   navigateTo("/login", { redirectCode: 401 })
 }
 
-const { data: links } = await useFetch("/api/navLinks")
+const { data: links } = await useFetch("/meta/navLinks")
 
 function logout() {
   cookie.value = null
