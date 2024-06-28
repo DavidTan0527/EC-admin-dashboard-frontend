@@ -42,11 +42,21 @@ const form = reactive({
   tableId: ref(''),
   options: ref({}),
 })
+const showDateField = ref(false)
 
 const selectedTable = computed(() => {
   let search = tableRes.value?.data.filter(table => table.id === form.tableId) ?? []
   return search.length > 0 ? search[0] : {}
 })
+
+function clearForm() {
+  form.id = ""
+  form.type = ""
+  form.title = ""
+  form.permKey = ""
+  form.tableId = ""
+  form.options = {}
+}
 
 function loadForm(row) {
   form.id = row.id
@@ -104,24 +114,21 @@ async function deleteRow(row) {
   <div>
     <Table
       id="chart-table"
-      class="text-sm max-w-2xl"
+      class="max-w-2xl"
       :columns="columns"
       :rows="chartReq.data ?? []"
       :searchColumns="['title', 'permKey']"
       addBtn
       addModal
-      :addBtnAction="() => form.id = ''"
+      :addBtnAction="clearForm"
       ref="table"
     >
-      <template #is_super="{ data }">
-        {{ data.is_super ? "Yes" : "No" }}
-      </template>
       <template #actions="{ data }">
         <button
-          class="cursor-pointer font-semibold text-amber-300 hover:text-amber-200 duration-100 mr-2"
+          class="cursor-pointer font-semibold text-amber-300 hover:text-amber-200 duration-100 mr-4"
           @click="loadForm(data)"
         >
-          Rename
+          Edit
         </button>
         <button class="cursor-pointer font-semibold text-red-500 hover:text-red-400 duration-100" @click="deleteRow(data)">Delete</button>
       </template>
@@ -206,17 +213,39 @@ async function deleteRow(row) {
             <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="y-label" placeholder="(Leave blank if not needed)" v-model="form.options.yLabel">
           </div>
 
+          <div class="flex flex-row">
+            <label class="inline-flex items-center cursor-pointer me-4">
+              <input type="checkbox" value="" class="sr-only peer" v-model="form.options.showDatalabels">
+              <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span class="ms-3 text-sm font-medium text-gray-900">Show labels?</span>
+            </label>
+
+            <label class="inline-flex items-center cursor-pointer" v-if="form.options.showDatalabels">
+              <input type="checkbox" value="" class="sr-only peer" v-model="form.options.showPercentage">
+              <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span class="ms-3 text-sm font-medium text-gray-900">Is percentage?</span>
+            </label>
+          </div>
+
           <label class="inline-flex items-center cursor-pointer me-4">
-            <input type="checkbox" value="" class="sr-only peer" v-model="form.options.showDatalabels">
+            <input type="checkbox" value="" class="sr-only peer" v-model="showDateField">
             <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            <span class="ms-3 text-sm font-medium text-gray-900">Show labels?</span>
+            <span class="ms-3 text-sm font-medium text-gray-900">Has date field?</span>
           </label>
 
-          <label class="inline-flex items-center cursor-pointer" v-if="form.options.showDatalabels">
-            <input type="checkbox" value="" class="sr-only peer" v-model="form.options.showPercentage">
-            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            <span class="ms-3 text-sm font-medium text-gray-900">Is percentage?</span>
-          </label>
+          <div class="flex flex-row items-baseline" v-if="showDateField">
+            <label for="x-field" class="w-1/3 block mb-2 font-medium text-gray-900">Date Field</label>
+            <select id="x-field" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.options.dateField">
+              <option
+                v-for="field in selectedTable.fields"
+                :key="field.field"
+                :value="field.field"
+              >
+                {{ field.headerName }}
+              </option>
+            </select>
+          </div>
+
 
           <div class="flex flex-row justify-end">
             <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>

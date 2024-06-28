@@ -30,7 +30,7 @@ function logout() {
 
     <div class="flex flex-row content-container min-h-full">
       <Sidebar class="w-1/5" :links="links" />
-      <div class="w-4/5 p-4">
+      <div class="relative w-4/5 p-4">
         <slot />
       </div>
     </div>

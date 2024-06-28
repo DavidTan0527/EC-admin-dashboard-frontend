@@ -3,7 +3,7 @@ const toasts = ref([])
 
 defineExpose({
   notify: ({ message, type = "info", timeout = 5000 }) => {
-    toasts.value.push({ message, type, timeout })
+    toasts.value?.push({ message, type, timeout })
   },
 })
 </script>

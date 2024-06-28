@@ -29,8 +29,10 @@ const dateFormatter = (params) => {
 
 /*** Start of Modal ***/
 const addColModal = ref(null)
+const delColModal = ref(null)
 const formulaInput = ref(null)
 
+const targetDelCol = ref("")
 const form = reactive({
   name: ref(""),
   field: ref(""),
@@ -55,7 +57,7 @@ function clearForm() {
 }
 
 function addFormulaTerm(field) {
-  form.formula += ` data['${field}'] `
+  form.formula += ` getValue('${field}') `
   formulaInput.value.focus()
 }
 
@@ -64,7 +66,21 @@ function submitAddCol() {
     let col = { headerName: form.name, field: form.field, rowDrag: colDefs.value.length === 0 }
     if (form.isFormula) {
       let formula = unref(form.formula)
-      col = { ...col, formula, valueGetter: ({ data }) => eval(formula), editable: false }
+      col = {
+        ...col,
+        formula,
+        valueGetter: ({ getValue, data, node }) => {
+          const value = eval(formula)
+          if (!("rowPinned" in node))
+            rowData.value[node.rowIndex][form.field] = value
+          return value
+        },
+        valueSetter: params => {
+            params.data[form.field] = params.newValue
+            return true
+        },
+        editable: false
+      }
     } else {
       col = { ...col, cellEditor: form.type, editable: true }
       if (form.type === "agDateCellEditor") {
@@ -80,6 +96,14 @@ function submitAddCol() {
     tb.notify({ type: "error", message: err })
   }
   addColModal.value.close()
+}
+
+function submitDelCol() {
+  const targetIdx = colDefs.value.findIndex(col => col.field === targetDelCol.value)
+  colDefs.value.splice(targetIdx, 1)
+  gridApi.value.setGridOption("columnDefs", colDefs.value);
+  save()
+  delColModal.value.close()
 }
 
 watch(
@@ -106,17 +130,24 @@ try {
   tb.value.notify({ message: err, type: "error", timeout: 0 })
 }
 
-colDefs.value = tableRes.value.data.fields
-colDefs.value.map((e, i) => {
-  e.filter = true
-  e.editable = !('formula' in e)
-  e.rowDrag = i === 0
-})
+colDefs.value = tableRes.value.data.fields.map((e, i) => ({
+  ...e,
+  filter: true,
+  editable: !('formula' in e),
+  rowDrag: i === 0,
+}))
 
 colDefs.value
   .map((e, i) => ({ e, i }))
   .filter(({ e, i }) => "formula" in e)
-  .forEach(({ e, i }) => colDefs.value[i].valueGetter = ({ data }) => eval(e.formula))
+  .forEach(({ e, i }) => {
+    colDefs.value[i].valueGetter = ({ getValue, data, node }) => {
+      const value = eval(e.formula)
+      if (!("rowPinned" in node))
+        rowData.value[node.rowIndex][e.field] = value
+      return value
+    }
+  })
 
 colDefs.value
   .map((e, i) => ({ e, i }))
@@ -129,7 +160,7 @@ colDefs.value
 rowData.value = tableRes.value.data.rows
 function getSumByCols() {
   const canSum = col => col.cellEditor === "agNumberCellEditor"
-  const targetFields = colDefs.value.filter(e => canSum(e)).map(e => e.field)
+  const targetFields = colDefs.value.filter(canSum).map(e => e.field)
   let res = {}
   for (const field of targetFields) {
     res[field] = 0
@@ -142,10 +173,6 @@ function getSumByCols() {
     }
   })
 
-  if (colDefs.value.length > 0) {
-    res[colDefs.value[0].field] = "SUM"
-  }
-    
   return [res]
 }
 
@@ -200,6 +227,7 @@ function onDragStopped(params) {
   colDefs.value = colDefs.value
     .sort((a, b) => cols.findIndex(col => col.colId === a.field) - cols.findIndex(col => col.colId === b.field))
     .map((e, i) => ({ ...e, rowDrag: i === 0 }))
+  gridApi.value.setGridOption("columnDefs", colDefs.value);
   save()
 }
 
@@ -209,7 +237,7 @@ function onCellEditingStopped() {
 }
 
 function addRow() {
-  const res = gridApi.value.applyTransaction({ add: [{}] });
+  const res = gridApi.value.applyTransaction({ add: [{}], addIndex: 0 });
   save()
 }
 
@@ -243,7 +271,7 @@ const save = debounce(async () => {
   } catch (err) {
     tb.value.notify({ message: err, type: "error" })
   }
-}, 3000)
+}, 5000)
 
 
 onMounted(() => {
@@ -282,6 +310,16 @@ onMounted(() => {
       >
         <i class="w-4 h-4 me-1" data-feather="minus"></i>
         Selected Row
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        data-modal-target="delColModal"
+        data-modal-show="delColModal"
+      >
+        <i class="w-4 h-4 me-1" data-feather="minus"></i>
+        Column
       </button>
     </div>
 
@@ -395,6 +433,29 @@ onMounted(() => {
                 required>
             </div>
           </div>
+        </div>
+        <div class="flex flex-row justify-end">
+          <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>
+        </div>
+      </form>
+    </template>
+  </Modal>
+
+  <Modal id="delColModal" ref="delColModal">
+    <template #title>Remove a Column</template>
+    <template #body>
+      <form class="space-y-4 px-4 py-6" @submit.prevent="submitDelCol">
+        <div class="flex flex-row items-baseline">
+          <label for="col" class="w-1/3 block mb-2 font-medium text-gray-900">Type</label>
+          <select id="col" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="targetDelCol">
+            <option
+              v-for="col in colDefs"
+              :key="col.field"
+              :value="col.field"
+            >
+              {{ col.headerName }}
+            </option>
+          </select>
         </div>
         <div class="flex flex-row justify-end">
           <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>

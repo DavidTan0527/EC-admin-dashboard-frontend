@@ -1,8 +1,15 @@
-import { Chart, ArcElement, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+import {
+  Chart, Title, Tooltip, Legend,
+  CategoryScale, LinearScale, TimeScale,
+  ArcElement, PointElement, BarElement, LineElement,
+} from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
+import 'chartjs-adapter-moment'
 
 export default defineNuxtPlugin(() => {
-  Chart.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+  Chart.register(Title, Tooltip, Legend)
+  Chart.register(CategoryScale, LinearScale, TimeScale)
+  Chart.register(ArcElement, PointElement, BarElement, LineElement)
   Chart.register(ChartDataLabels)
 })
 

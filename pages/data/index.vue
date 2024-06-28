@@ -1,5 +1,9 @@
 <script setup>
 const config = useRuntimeConfig()
+definePageMeta({
+  middleware: ["permission"],
+  permissionKey: "PG_DATA",
+})
 
 const cookie = useCookie("ec-t")
 if (!cookie?.value) {
@@ -12,43 +16,40 @@ const headers = {
 
 const isLoading = ref(true)
 
-const table = ref(null)
 const columns = [
   { label: "Name", key: "name" },
+  { label: "Permission", key: "permKey" },
   { label: "Actions", key: "actions" },
 ]
 
-const editModal = ref(null)
 const tb = ref(null)
-
+const table = ref(null)
 const form = reactive({
   name: ref(""),
-})
-const editForm = reactive({
-  name: ref(""),
+  permKey: ref(""),
 })
 
 const { data: tableReq, refresh } = await useApiFetch("/table/schema", {
   headers,
 })
 
+const { data: permRes } = await useApiFetch("/permission_keys", {
+  headers,
+})
+
 isLoading.value = false
 
-async function submitAdd() {
-  if (tableReq.value.data.some(tab => tab.name === form.name)) {
-    tb.notify({ type: "error", message: `Table with name ${form.name} already exists!` })
-    return
-  }
-
+let editTableId = ""
+async function submit() {
   try {
-    const res = await $fetch(config.public.apiBase + "/table", {
-      method: "POST",
+    let url = editTableId === ""
+      ? config.public.apiBase + "/table"
+      : `${config.public.apiBase }/table/${editTableId}`
+
+    const res = await $fetch(url, {
+      method: editTableId === "" ? "POST" : "PUT",
       headers,
-      body: {
-        name: form.name,
-        fields: [],
-        rows: [],
-      },
+      body: form,
     })
 
     if (res.success) {
@@ -64,36 +65,15 @@ async function submitAdd() {
   table.value.closeModal()
 }
 
-let editTableId = ""
-async function submitEdit() {
-  if (tableReq.value.data.some(tab => tab.name === editForm.name)) {
-    tb.notify({ type: "error", message: `Table with name ${editForm.name} already exists!` })
-    return
-  }
-
-  try {
-    const res = await $fetch(`${config.public.apiBase }/table/${editTableId}`, {
-      method: "PUT",
-      headers,
-      body: { name: editForm.name },
-    })
-
-    if (res.success) {
-      tb.value.notify({ message: res.message, type: "success" })
-      refresh()
-    } else {
-      tb.value.notify({ message: res.message, type: "error" })
-    }
-  } catch (err) {
-    tb.value.notify({ message: err, type: "error" })
-  }
-
-  editModal.value.close()
+function addRow() {
+  editTableId = ""
 }
 
 function editRow(row) {
-  editForm.name = row.name
+  form.name = row.name
+  form.permKey = row.permKey
   editTableId = row.id
+  table.value.openModal()
 }
 
 async function deleteRow(row) {
@@ -121,34 +101,43 @@ async function deleteRow(row) {
     <Spinner v-if="isLoading" />
     <Table
       v-else
-      class="max-w-md"
+      class="max-w-2xl"
       :columns="columns"
       :rows="tableReq.data ?? []"
-      :searchColumns="['name']"
+      :searchColumns="['name', 'permKey']"
       addBtn
+      :addBtnAction="addRow"
+      addModal
       ref="table"
     >
-      <template #is_super="{ data }">
-        {{ data.is_super ? "Yes" : "No" }}
-      </template>
       <template #actions="{ data }">
         <button
-          class="cursor-pointer font-semibold text-amber-300 hover:text-amber-200 duration-100 mr-2"
+          class="cursor-pointer font-semibold text-amber-300 hover:text-amber-200 duration-100 mr-4"
           @click="editRow(data)"
-          data-modal-target="editModal"
-          data-modal-toggle="editModal"
         >
-          Rename
+          Edit
         </button>
         <button class="cursor-pointer font-semibold text-red-500 hover:text-red-400 duration-100" @click="deleteRow(data)">Delete</button>
       </template>
 
       <template #modal-title>Add New Table</template>
       <template #modal-body>
-        <form class="space-y-4 p-6" @submit.prevent="submitAdd">
+        <form class="space-y-4 p-6" @submit.prevent="submit">
           <div class="flex flex-row items-baseline">
             <label for="name" class="w-1/4 block mb-2 font-medium text-gray-900">Name</label>
             <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="username" v-model="form.name" required>
+          </div>
+          <div class="flex flex-row items-baseline">
+            <label for="data-table" class="w-1/3 block mb-2 font-medium text-gray-900">Permission Key</label>
+            <select id="data-table" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.permKey">
+              <option
+                v-for="key in permRes.data"
+                :key="key"
+                :value="key"
+              >
+                {{ key }}
+              </option>
+            </select>
           </div>
           <div class="flex flex-row justify-end">
             <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>
@@ -157,21 +146,6 @@ async function deleteRow(row) {
       </template>
     </Table>
   </div>
-
-  <Modal id="editModal" ref="editModal">
-    <template #title>Rename</template>
-    <template #body>
-      <form class="space-y-4 p-6" @submit.prevent="submitEdit">
-        <div class="flex flex-row items-baseline">
-          <label for="name" class="w-1/4 block mb-2 font-medium text-gray-900">Name</label>
-          <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="name" v-model="editForm.name" required>
-        </div>
-        <div class="flex flex-row justify-end">
-          <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>
-        </div>
-      </form>
-    </template>
-  </Modal>
 
   <ToastBox ref="tb"></ToastBox>
 </template>

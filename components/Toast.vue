@@ -29,7 +29,7 @@ onMounted(() => {
   initDismisses()
   if (props.timeout > 0) {
     setTimeout(() => {
-      btnClose.value.click()
+      btnClose.value?.click()
     }, props.timeout)
   }
 })

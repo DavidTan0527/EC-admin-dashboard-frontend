@@ -43,7 +43,7 @@ const props = defineProps({
 const search = ref("")
 const originalRows = toRef(props, "rows")
 const displayRows = computed(() =>
-  originalRows.value.filter(row => props.searchColumns.some(key => row[key].includes(search.value)))
+  originalRows.value.filter(row => props.searchColumns.some(key => key in row && row[key].includes(search.value)))
 )
 
 const modal = ref(null)

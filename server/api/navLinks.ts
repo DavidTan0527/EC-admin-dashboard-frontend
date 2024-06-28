@@ -33,6 +33,7 @@ export default defineEventHandler(async (event: H3Event) => {
     let links = [
       { label: "Home", href: "/landing", icon: "home" },
       { label: "Chart", href: "/chart", icon: "bar-chart-2" },
+      { label: "Chart View", href: "/chart-view", icon: "grid" },
       { label: "Data", icon: "database",
         children: [
           { label: "Overall", href: "/data", icon: "list" },
@@ -41,9 +42,9 @@ export default defineEventHandler(async (event: H3Event) => {
           )),
         ],
       },
-      { label: "User Management" , href: "/users"      , icon: "users", superOnly: true },
       { label: "Permissions"     , href: "/permissions", icon: "lock" , superOnly: true },
-      { label: "Account Settings", href: "/settings"   , icon: "settings" },
+      { label: "User Management" , href: "/users"      , icon: "users", superOnly: true },
+      // { label: "Account Settings", href: "/settings"   , icon: "settings" },
     ]
 
 

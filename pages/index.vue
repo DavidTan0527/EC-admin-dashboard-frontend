@@ -1,4 +1,4 @@
 <script setup>
-navigateTo("/", { redirectCode: 301 })
+navigateTo("/landing", { redirectCode: 301 })
 </script>
 
