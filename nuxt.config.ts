@@ -28,4 +28,7 @@ export default defineNuxtConfig({
   experimental: {
     renderJsonPayloads: false,
   },
+  nitro: {
+    preset: 'bun',
+  },
 })
