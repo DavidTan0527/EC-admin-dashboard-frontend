@@ -20,9 +20,9 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
-    jwtSecret: '',
+    jwtSecret: process.env.NUXT_JWT_SECRET ?? '',
     public: {
-      apiBase: '/api'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '/api'
     }
   },
   experimental: {

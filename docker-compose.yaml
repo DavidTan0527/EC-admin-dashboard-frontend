@@ -1,0 +1,8 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "8002:3000"
+    environment:
+      NUXT_JWT_SECRET: ${NUXT_JWT_SECRET}
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE}
