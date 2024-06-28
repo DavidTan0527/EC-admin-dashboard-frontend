@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=oven/bun:1-alpine
+ARG NODE_IMAGE=oven/bun:1.1-alpine
 
 FROM --platform=linux/amd64 $NODE_IMAGE AS base
 WORKDIR /usr/src/app
@@ -16,7 +16,7 @@ COPY . .
 ENV NODE_ENV=production
 RUN bun run build
 
-FROM prerelease AS release
+FROM install AS release
 COPY --chown=bun:bun --from=install /temp/node_modules node_modules
 COPY --chown=bun:bun --from=prerelease /usr/src/app/.output .
 
