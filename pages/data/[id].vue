@@ -124,10 +124,10 @@ try {
   }))
 
   if (!tableRes.value.success) {
-    tb.value.notify({ message: tableRes.value.message, type: "error", timeout: 0 })
+    notify({ message: tableRes.value.message, type: "error", timeout: 0 })
   }
 } catch (err) {
-  tb.value.notify({ message: err, type: "error", timeout: 0 })
+  notify({ message: err, type: "error", timeout: 0 })
 }
 
 colDefs.value = tableRes.value.data.fields.map((e, i) => ({
@@ -249,9 +249,14 @@ function removeSelectedRow() {
 /*** End of Table ***/
 
 
-const save = debounce(saveInner, 5000)
+const save = debounce(saveInner, 1000)
+const notify = debounce((...args) => tb.value.notify(...args), 3000)
 
 async function saveInner() {
+  if (gridApi.value === null) {
+    return
+  }
+
   try {
     const rows = []
     gridApi.value.forEachNode(({ data }) => rows.push(data))
@@ -266,12 +271,12 @@ async function saveInner() {
     })
 
     if (res.success) {
-      tb.value.notify({ message: res.message, type: "success", timeout: 1200 })
+      notify({ message: res.message, type: "success", timeout: 1200 })
     } else {
-      tb.value.notify({ message: res.message, type: "error", timeout: 0 })
+      notify({ message: res.message, type: "error", timeout: 0 })
     }
   } catch (err) {
-    tb.value.notify({ message: err, type: "error" })
+    notify({ message: err, type: "error" })
   }
 }
 
@@ -281,6 +286,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  save.cancel()
   saveInner()
 })
 
@@ -336,7 +342,7 @@ onBeforeUnmount(() => {
       autoHeaderHeight
       wrapHeaderText
       :autoSizeStrategy="{
-        type: 'fitGridWidth',
+        type: 'fitCellContents',
       }"
 
       animateRows
