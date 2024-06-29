@@ -249,7 +249,9 @@ function removeSelectedRow() {
 /*** End of Table ***/
 
 
-const save = debounce(async () => {
+const save = debounce(saveInner, 5000)
+
+async function saveInner() {
   try {
     const rows = []
     gridApi.value.forEachNode(({ data }) => rows.push(data))
@@ -271,13 +273,17 @@ const save = debounce(async () => {
   } catch (err) {
     tb.value.notify({ message: err, type: "error" })
   }
-}, 5000)
-
+}
 
 onMounted(() => {
   feather.replace()
   initModals()
 })
+
+onBeforeUnmount(() => {
+  saveInner()
+})
+
 </script>
 
 <template>
