@@ -86,7 +86,10 @@ function submitAddCol() {
       if (form.type === "agDateCellEditor") {
         col.valueFormatter = dateFormatter
       } else if (form.type === "agSelectCellEditor") {
-        col.cellEditorParams = { values: form.selectOptions }
+        col.cellEditorParams = {
+          values: form.selectOptions,
+          valueListMaxHeight: 120,
+        }
       }
     }
     colDefs.value.push(col)
@@ -135,6 +138,10 @@ colDefs.value = tableRes.value.data.fields.map((e, i) => ({
   filter: true,
   editable: !('formula' in e),
   rowDrag: i === 0,
+  cellEditorParams: {
+    ...(e.cellEditor === "agSelectCellEditor") && { valueListMaxHeight: 120 },
+    ...e.cellEditorParams,
+  },
 }))
 
 colDefs.value
@@ -480,6 +487,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
+.ag-center-cols-viewport {
+    min-height: 200px !important;
+}
+
 .ag-floating-bottom-container .ag-row {
     background-color: var(--ag-header-background-color);
 }
