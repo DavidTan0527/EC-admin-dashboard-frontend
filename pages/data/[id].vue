@@ -41,10 +41,10 @@ const dateComparator = (filterDate, cellValue) => {
   return 0
 }
 
-const normalizeValue = val => typeof val !== "number" || isNaN(val) ? 0 : val
+const norm = val => typeof val !== "number" || isNaN(val) ? 0 : val
 
 function evaluator(getValue, formula) {
-  formula = formula.replaceAll(/{{([^}]+)}}/g, "normalizeValue(getValue('$1'))")
+  formula = formula.replaceAll(/{{([^}]+)}}/g, "norm(getValue('$1'))")
   const value = eval(formula)
   return value
 }
