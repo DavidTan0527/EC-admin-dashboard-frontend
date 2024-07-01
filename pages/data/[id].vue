@@ -16,34 +16,32 @@ const tb = ref(null)
 
 const dateFormatter = (params) => {
   if (!params.value) {
-    return "";
+    return ""
   }
   let value = params.value
   if (typeof value === "string") {
     value = new Date(value)
   }
-  const month = value.getMonth() + 1;
-  const day = value.getDate();
-  return `${value.getFullYear()}-${month < 10 ? "0" + month : month}-${day < 10 ? "0" + day : day}`;
+  const month = value.getMonth() + 1
+  const day = value.getDate()
+  return `${value.getFullYear()}-${month < 10 ? "0" + month : month}-${day < 10 ? "0" + day : day}`
 }
 
 const dateComparator = (filterDate, cellValue) => {
   let cellDate = new Date(cellValue)
   if (filterDate === cellDate) {
-    return 0;
+    return 0
   }
   if (cellDate < filterDate) {
-    return -1;
+    return -1
   }
   if (cellDate > filterDate) {
-    return 1;
+    return 1
   }
-  return 0;
+  return 0
 }
 
-function normalizeValue(val) {
-  return typeof val !== "number" || isNaN(val) ? 0 : val
-}
+const normalizeValue = val => typeof val !== "number" || isNaN(val) ? 0 : val
 
 function evaluator(getValue, formula) {
   formula = formula.replaceAll(/{{([^}]+)}}/g, "normalizeValue(getValue('$1'))")
