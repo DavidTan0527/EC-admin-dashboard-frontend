@@ -41,6 +41,13 @@ const dateComparator = (filterDate, cellValue) => {
   return 0;
 }
 
+function evaluator(getValue, formula) {
+  const normalizedValue = val => typeof val !== "number" || isNaN(val) ? 0 : val
+  formula = formula.replaceAll(/{{([^}]+)}}/g, "normalizedValue(getValue('$1'))")
+  const value = eval(formula)
+  return value
+}
+
 /*** Start of Modal ***/
 const addColModal = ref(null)
 const delColModal = ref(null)
@@ -71,7 +78,7 @@ function clearForm() {
 }
 
 function addFormulaTerm(field) {
-  form.formula += ` getValue('${field}') `
+  form.formula += ` {{${field}}} `
   formulaInput.value.focus()
 }
 
@@ -84,7 +91,7 @@ function submitAddCol() {
         ...col,
         formula,
         valueGetter: ({ getValue, data, node }) => {
-          const value = eval(formula)
+          const value = evaluator(getValue, formula)
           if (!("rowPinned" in node))
             tableRes.value.data.rows[node.rowIndex][form.field] = value
           return value
@@ -163,7 +170,7 @@ const colDefs = ref(tableRes.value.data.fields.map((e, i) => ({
 
   ...("formula" in e) && {
     valueGetter: ({ getValue, data, node }) => {
-      const value = eval(e.formula)
+      const value = evaluator(getValue, e.formula)
       if (!("rowPinned" in node))
         tableRes.value.data.rows[node.rowIndex][e.field] = value
       return value
@@ -436,15 +443,11 @@ onBeforeUnmount(() => {
           <span class="ms-3 text-sm font-medium text-gray-900">Is Formula?</span>
         </label>
         <div v-if="form.isFormula">
-          <div class="inline-flex mb-4" role="group">
+          <div class="inline-flex flex-wrap space-x-2 mb-4" role="group">
             <button
               type="button"
-              class="px-4 py-2 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-l border-gray-900 hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white"
-              :class="{
-                'rounded-s-lg': index === 0,
-                'border-r rounded-e-lg': index === colDefs.length - 1,
-              }"
-              v-for="(col, index) in colDefs"
+              class="px-2 py-1 my-1 rounded-sm text-sm font-medium text-gray-900 bg-transparent border border-gray-900 hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white"
+              v-for="col in colDefs"
               :key="col.field"
               @click="addFormulaTerm(col.field)"
             >
