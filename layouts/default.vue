@@ -29,13 +29,10 @@ function logout() {
     </header>
 
     <div class="flex flex-row content-container min-h-full">
-      <div class="flex flex-col justify-between w-1/5">
+      <div class="flex flex-col justify-between w-1/5 max-w-lg">
         <Sidebar :links="links" />
-        <button class="flex flex-row items-center justify-center w-full p-2 mt-4 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100" @click="refresh">
-          <i class="h-4 w-4 me-3" data-feather="refresh-cw"></i> Refresh
-        </button>
       </div>
-      <div class="relative w-4/5 p-4">
+      <div class="relative w-4/5 p-4 xl:grow">
         <slot />
       </div>
     </div>

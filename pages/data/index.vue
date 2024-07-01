@@ -53,7 +53,7 @@ async function submit() {
     })
 
     if (res.success) {
-      tb.value.notify({ message: res.message, type: "success" })
+      tb.value.notify({ message: res.message + "\n" + "Refresh the page to reload sidebar", type: "success" })
       refresh()
     } else {
       tb.value.notify({ message: res.message, type: "error" })
@@ -61,11 +61,12 @@ async function submit() {
   } catch (err) {
     tb.value.notify({ message: err, type: "error" })
   }
-
   table.value.closeModal()
 }
 
 function addRow() {
+  form.name = ""
+  form.permKey = ""
   editTableId = ""
 }
 
@@ -124,8 +125,8 @@ async function deleteRow(row) {
       <template #modal-body>
         <form class="space-y-4 p-6" @submit.prevent="submit">
           <div class="flex flex-row items-baseline">
-            <label for="name" class="w-1/4 block mb-2 font-medium text-gray-900">Name</label>
-            <input type="text" class="w-3/4 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="username" v-model="form.name" required>
+            <label for="name" class="w-1/3 block mb-2 font-medium text-gray-900">Name</label>
+            <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="username" v-model="form.name" required>
           </div>
           <div class="flex flex-row items-baseline">
             <label for="data-table" class="w-1/3 block mb-2 font-medium text-gray-900">Permission Key</label>

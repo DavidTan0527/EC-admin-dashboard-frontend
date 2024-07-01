@@ -153,6 +153,12 @@ let { data: tableRes } = await useAsyncData(
   { watch: [yearRef, monthRef] }
 )
 
+if (tableRes.value === null) {
+  tableRes.value = {
+    data: { fields: [], rows: [] }
+  }
+}
+
 const colDefs = ref(tableRes.value.data.fields.map((e, i) => ({
   ...e,
   filter: true,
@@ -280,7 +286,7 @@ function removeSelectedRow() {
 
 
 const save = debounce(saveInner, 1000)
-const notify = debounce((...args) => tb.value.notify(...args), 3000)
+const notify = debounce((...args) => tb?.value?.notify(...args), 3000)
 
 async function saveInner() {
   if (gridApi.value === null) {
@@ -323,6 +329,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   forceSave()
+  notify.cancel()
 })
 
 </script>
@@ -432,10 +439,6 @@ onBeforeUnmount(() => {
           <label for="name" class="w-1/3 block mb-2 font-medium text-gray-900">Column Name</label>
           <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="name" v-model="form.name" required>
         </div>
-        <div class="flex flex-row items-baseline">
-          <label for="field" class="w-1/3 block mb-2 font-medium text-gray-900">Field</label>
-          <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="field" v-model="form.field" required>
-        </div>
         <label class="inline-flex items-center cursor-pointer">
           <input type="checkbox" value="" class="sr-only peer" v-model="form.isFormula">
           <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -456,7 +459,7 @@ onBeforeUnmount(() => {
           <input
             type="text"
             class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2"
-            id="name"
+            id="formula"
             v-model="form.formula"
             required
             ref="formulaInput">
