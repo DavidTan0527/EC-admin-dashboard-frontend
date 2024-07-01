@@ -38,7 +38,7 @@ watch(currChartView, async () => {
     let tableIdSet = new Set(req.data.map(c => c.tableId))
     let tableIds = [...tableIdSet.difference(cachedSet)]
     let tableResponses = await Promise.all(tableIds.map(id => useApiFetch(`/table/${id}`, { headers })))
-    let tableData = tableResponses.map(({ data : { value: { success, data } } }, i) => [tableIds[i], data])
+    let tableData = tableResponses.map(({ data : { value: { data: table } } }, i) => [tableIds[i], augmentTableData(table)])
     tableDataMap = { ...tableDataMap, ...Object.fromEntries(tableData) }
 
     cachedSet = cachedSet.union(tableIdSet)
@@ -48,6 +48,15 @@ watch(currChartView, async () => {
   isLoading.value = false
 }, { immediate: true })
 
+function augmentTableData(table) {
+  table.rows = []
+  for (const [year, yearData] of Object.entries(table.data)) {
+    for (const [month, data] of Object.entries(yearData)) {
+      table.rows = table.rows.concat(data.map(e => ({ ...e, __DATA_TIMEBUCKET: new Date(year, month-1, 1) })))
+    }
+  }
+  return table
+}
 
 const monthPicker = ref(null)
 const baseDate = ref(new Date())
@@ -82,6 +91,7 @@ onMounted(() => {
       :month="baseDate.getMonth()"
       :year="baseDate.getFullYear()"
       :duration="duration"
+      hasDuration
       @change="change"
       ref="monthPicker"
     ></MonthPicker>
@@ -103,8 +113,6 @@ onMounted(() => {
       :showDatalabels="chart.options.showDatalabels"
       :showPercentage="chart.options.showPercentage"
 
-      :timeseries="chart.options.xField === chart.options.dateField"
-      :dateField="chart.options.dateField"
       :baseDate="baseDate"
       :pastDuration="duration"
     >

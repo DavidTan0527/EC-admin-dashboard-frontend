@@ -42,7 +42,6 @@ const form = reactive({
   tableId: ref(''),
   options: ref({}),
 })
-const showDateField = ref(false)
 
 const selectedTable = computed(() => {
   let search = tableRes.value?.data.filter(table => table.id === form.tableId) ?? []
@@ -83,8 +82,8 @@ async function submit() {
     } else {
       tb.value.notify({ message: res.message, type: "error", timeout: 0 })
     }
-  } catch {
-    tb.value.notify({ message: "Something went wrong. Please try again.", type: "error" })
+  } catch (err) {
+    tb.value.notify({ message: err, type: "error" })
   }
 
   table.value.closeModal()
@@ -155,6 +154,7 @@ async function deleteRow(row) {
           <div class="flex flex-row items-baseline">
             <label for="data-table" class="w-1/3 block mb-2 font-medium text-gray-900">Permission Key</label>
             <select id="data-table" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.permKey">
+              <option value="">--</option>
               <option
                 v-for="key in permRes.data"
                 :key="key"
@@ -181,6 +181,7 @@ async function deleteRow(row) {
           <div class="flex flex-row items-baseline">
             <label for="x-field" class="w-1/3 block mb-2 font-medium text-gray-900">x Field</label>
             <select id="x-field" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.options.xField">
+              <option value="__DATA_TIMEBUCKET" selected>[Sheet's Month]</option>
               <option
                 v-for="field in selectedTable.fields"
                 :key="field.field"
@@ -226,26 +227,6 @@ async function deleteRow(row) {
               <span class="ms-3 text-sm font-medium text-gray-900">Is percentage?</span>
             </label>
           </div>
-
-          <label class="inline-flex items-center cursor-pointer me-4">
-            <input type="checkbox" value="" class="sr-only peer" v-model="showDateField">
-            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            <span class="ms-3 text-sm font-medium text-gray-900">Has date field?</span>
-          </label>
-
-          <div class="flex flex-row items-baseline" v-if="showDateField">
-            <label for="x-field" class="w-1/3 block mb-2 font-medium text-gray-900">Date Field</label>
-            <select id="x-field" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.options.dateField">
-              <option
-                v-for="field in selectedTable.fields"
-                :key="field.field"
-                :value="field.field"
-              >
-                {{ field.headerName }}
-              </option>
-            </select>
-          </div>
-
 
           <div class="flex flex-row justify-end">
             <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>

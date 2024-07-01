@@ -12,6 +12,10 @@ const props = defineProps({
     type: Number,
     default: 12,
   },
+  hasDuration: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const monthRef = ref(props.month)
@@ -71,7 +75,7 @@ defineExpose({
       </li>
     </ul>
 
-    <ul class="grid w-full grid-cols-4 gap-2 items-stretch text-xs">
+    <ul class="grid w-full grid-cols-4 gap-2 items-stretch text-xs" v-if="props.hasDuration">
       <li>
         <input id="horizontal-duration-1-month" type="radio" :value="1" name="duration" class="peer hidden" v-model="durationRef">
         <label for="horizontal-duration-1-month" class="inline-flex items-center justify-center w-full h-full p-1 font-medium text-center text-gray-900 border rounded-lg cursor-pointer border-gray-900 peer-checked:border-blue-500 peer-checked:text-blue-500 hover:text-gray-600 hover:bg-slate-100">1 mth</label>

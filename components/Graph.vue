@@ -32,10 +32,6 @@ const props = defineProps({
     type: String,
     default: "",
   },
-  timeseries: {
-    type: Boolean,
-    default: false,
-  },
   showDatalabels: {
     type: Boolean,
     default: false,
@@ -43,11 +39,6 @@ const props = defineProps({
   showPercentage: {
     type: Boolean,
     default: false,
-  },
-
-  dateField: {
-    type: String,
-    default: undefined,
   },
   baseDate: {
     type: Date,
@@ -59,6 +50,9 @@ const props = defineProps({
   },
 })
 
+const dateField = "__DATA_TIMEBUCKET"
+const isTimeseries = computed(() => props.xField === dateField)
+
 const options = computed(() => {
   let opts = {
     responsive: true,
@@ -67,7 +61,7 @@ const options = computed(() => {
         top: 5,
         left: 20,
         right: 20,
-        bottom: 5,
+        bottom: 10,
       },
     },
     maintainAspectRatio: false,
@@ -114,7 +108,7 @@ const options = computed(() => {
     },
   }
 
-  if (props.timeseries) {
+  if (isTimeseries.value) {
     opts.scales = { ...opts.scales, x: {} }
     opts.scales.x.type = "time"
     opts.scales.x.time = {
@@ -125,7 +119,7 @@ const options = computed(() => {
     }
   }
 
-  if (props.dateField && props.baseDate !== null) {
+  if (props.baseDate !== null && isTimeseries.value) {
     const year = props.baseDate.getFullYear()
     const month = props.baseDate.getMonth()
     const firstDayNextMonth = new Date(year, month + 1, 1)
@@ -133,10 +127,8 @@ const options = computed(() => {
     const start  = new Date(year, month - props.pastDuration + 1, 1)
     const end = new Date(firstDayNextMonth - 1)
     
-    if (props.timeseries) {
-      opts.scales.x.min = start
-      opts.scales.x.max = end
-    }
+    opts.scales.x.min = start
+    opts.scales.x.max = end
   }
 
   if (props.showDatalabels) {
@@ -149,7 +141,7 @@ const options = computed(() => {
       font: {
         size: 12,
       },
-      offset: props.type === "pie" || props.type === "doughnut" ? 18 : 0,
+      offset: props.type === "pie" || props.type === "doughnut" ? 12 : 0,
     }
 
     if (props.showPercentage) {
@@ -169,7 +161,7 @@ const options = computed(() => {
 const chartData = computed(() => {
   let activeRows = props.table.rows
 
-  if (props.dateField && props.baseDate !== null && !props.timeseries) {
+  if (props.baseDate !== null && !isTimeseries.value) {
     const year = props.baseDate.getFullYear()
     const month = props.baseDate.getMonth()
     const firstDayNextMonth = new Date(year, month + 1, 1)
@@ -177,8 +169,7 @@ const chartData = computed(() => {
     const start  = new Date(year, month - props.pastDuration + 1, 1)
     const end = new Date(firstDayNextMonth - 1)
     activeRows = activeRows.filter(e => {
-      if (!(props.dateField in e)) return false
-      const date = new Date(e[props.dateField])
+      const date = new Date(e[dateField])
       return start <= date && date <= end
     })
   }

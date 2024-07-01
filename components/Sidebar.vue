@@ -21,7 +21,7 @@ onMounted(() => {
 
 <template>
   <aside id="default-sidebar" class="sticky bg-white h-full w-64 transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
-    <div class="h-full px-3 py-4 overflow-y-auto">
+    <div class="flex flex-col justify-between h-full px-3 py-4 overflow-y-auto">
       <ul class="space-y-2 font-medium">
         <li v-for="link in links" :key="JSON.stringify(link)">
           <NuxtLink

@@ -27,6 +27,20 @@ const dateFormatter = (params) => {
   return `${value.getFullYear()}-${month < 10 ? "0" + month : month}-${day < 10 ? "0" + day : day}`;
 }
 
+const dateComparator = (filterDate, cellValue) => {
+  let cellDate = new Date(cellValue)
+  if (filterDate === cellDate) {
+    return 0;
+  }
+  if (cellDate < filterDate) {
+    return -1;
+  }
+  if (cellDate > filterDate) {
+    return 1;
+  }
+  return 0;
+}
+
 /*** Start of Modal ***/
 const addColModal = ref(null)
 const delColModal = ref(null)
@@ -72,7 +86,7 @@ function submitAddCol() {
         valueGetter: ({ getValue, data, node }) => {
           const value = eval(formula)
           if (!("rowPinned" in node))
-            rowData.value[node.rowIndex][form.field] = value
+            tableRes.value.data.rows[node.rowIndex][form.field] = value
           return value
         },
         valueSetter: params => {
@@ -114,57 +128,54 @@ watch(
   () => nextTick().then(feather.replace))
 /*** End of Modal ***/
 
+/*** Start of MonthPicker ***/
+const yearRef = ref(new Date().getFullYear())
+const monthRef = ref(new Date().getMonth())
+const monthPicker = ref(null)
+
+async function dateChange() {
+  await forceSave()
+  yearRef.value = monthPicker.value.year
+  monthRef.value = monthPicker.value.month
+}
+/*** End of MonthPicker ***/
 
 /*** Start of Table ***/
-const rowData = ref([])
-const colDefs = ref([])
+let { data: tableRes } = await useAsyncData(
+  "table-data",
+  () => $fetch(`${config.public.apiBase }/table/${route.params.id}/${yearRef.value}/${monthRef.value+1}`, { headers }),
+  { watch: [yearRef, monthRef] }
+)
 
-let tableRes
-
-try {
-  ({ data: tableRes } = await useApiFetch(`/table/${route.params.id}`, {
-    headers,
-  }))
-
-  if (!tableRes.value.success) {
-    notify({ message: tableRes.value.message, type: "error", timeout: 0 })
-  }
-} catch (err) {
-  notify({ message: err, type: "error", timeout: 0 })
-}
-
-colDefs.value = tableRes.value.data.fields.map((e, i) => ({
+const colDefs = ref(tableRes.value.data.fields.map((e, i) => ({
   ...e,
   filter: true,
+  filterParams: {
+    buttons: [ 'apply', 'clear', 'reset', 'cancel' ],
+    ...(e.cellEditor === "agDateCellEditor") && { comparator: dateComparator },
+  },
   editable: !('formula' in e),
   rowDrag: i === 0,
   cellEditorParams: {
     ...(e.cellEditor === "agSelectCellEditor") && { valueListMaxHeight: 120 },
     ...e.cellEditorParams,
   },
-}))
 
-colDefs.value
-  .map((e, i) => ({ e, i }))
-  .filter(({ e, i }) => "formula" in e)
-  .forEach(({ e, i }) => {
-    colDefs.value[i].valueGetter = ({ getValue, data, node }) => {
+  ...("formula" in e) && {
+    valueGetter: ({ getValue, data, node }) => {
       const value = eval(e.formula)
       if (!("rowPinned" in node))
-        rowData.value[node.rowIndex][e.field] = value
+        tableRes.value.data.rows[node.rowIndex][e.field] = value
       return value
-    }
-  })
+    },
+  },
 
-colDefs.value
-  .map((e, i) => ({ e, i }))
-  .filter(({ e, i }) => e.cellEditor === "agDateCellEditor")
-  .forEach(({ e, i }) => {
-    colDefs.value[i].cellDataType = "date"
-    colDefs.value[i].valueFormatter = dateFormatter
-  })
+  ...(e.cellEditor === "agDateCellEditor") && {
+    cellDataType: "date",
+    valueFormatter: dateFormatter,
+  },
+})))
 
-rowData.value = tableRes.value.data.rows
 function getSumByCols() {
   const canSum = col => col.cellEditor === "agNumberCellEditor"
   const targetFields = colDefs.value.filter(canSum).map(e => e.field)
@@ -187,7 +198,6 @@ const gridApi = ref(null)
 function onGridReady(params) {
   gridApi.value = params.api
   gridApi.value.setGridOption("columnDefs", colDefs.value);
-  gridApi.value.setGridOption("pinnedBottomRowData", getSumByCols())
 }
 
 let sortActive = false, filterActive = false
@@ -202,6 +212,9 @@ function onFilterChanged() {
   filterActive = gridApi.value.isAnyFilterPresent();
   let suppressRowDrag = sortActive || filterActive;
   gridApi.value.setGridOption("suppressRowDrag", suppressRowDrag);
+}
+
+function onModelUpdated() {
   gridApi.value.setGridOption("pinnedBottomRowData", getSumByCols())
 }
 
@@ -216,25 +229,28 @@ function onRowDragMove(event) {
     if (movingData === null || overData === null)
       return
 
-    let fromIndex = rowData.value.indexOf(movingData);
-    let toIndex = rowData.value.indexOf(overData);
+    let fromIndex = tableRes.value.data.rows.indexOf(movingData);
+    let toIndex = tableRes.value.data.rows.indexOf(overData);
 
     if (fromIndex === -1 || toIndex === -1)
       return
 
-    rowData.value[toIndex] = movingData;
-    rowData.value[fromIndex] = overData;
-    gridApi.value.setGridOption("rowData", rowData.value);
+    tableRes.value.data.rows[toIndex] = movingData;
+    tableRes.value.data.rows[fromIndex] = overData;
+    gridApi.value.setGridOption("rowData", tableRes.value.data.rows);
     gridApi.value.clearFocusedCell();
   }
 }
 
-function onDragStopped(params) {
+function onColumnMoved(params) {
   const cols = params.api.getAllDisplayedColumns()
   colDefs.value = colDefs.value
     .sort((a, b) => cols.findIndex(col => col.colId === a.field) - cols.findIndex(col => col.colId === b.field))
     .map((e, i) => ({ ...e, rowDrag: i === 0 }))
   gridApi.value.setGridOption("columnDefs", colDefs.value);
+}
+
+function onDragStopped(params) {
   save()
 }
 
@@ -244,6 +260,7 @@ function onCellEditingStopped() {
 }
 
 function addRow() {
+  tableRes.value.data.rows.unshift({})
   const res = gridApi.value.applyTransaction({ add: [{}], addIndex: 0 });
   save()
 }
@@ -268,7 +285,7 @@ async function saveInner() {
     const rows = []
     gridApi.value.forEachNode(({ data }) => rows.push(data))
 
-    let res = await $fetch(`${config.public.apiBase}/table/${route.params.id}`, {
+    let res = await $fetch(`${config.public.apiBase}/table/${route.params.id}/${yearRef.value}/${monthRef.value+1}`, {
       method: "POST",
       headers,
       body: {
@@ -287,25 +304,44 @@ async function saveInner() {
   }
 }
 
+async function forceSave() {
+  save.cancel()
+  await saveInner()
+}
+
 onMounted(() => {
   feather.replace()
   initModals()
+  initPopovers()
 })
 
 onBeforeUnmount(() => {
-  save.cancel()
-  saveInner()
+  forceSave()
 })
 
 </script>
 
 <template>
-  <h2 class="text-2xl mb-2">Name: {{ tableRes.data.name }}</h2>
+  <h2 class="text-2xl mb-2">Name: {{ tableRes.data.name }} ({{ yearRef }}/{{ monthRef+1 }})</h2>
+  <MonthPicker
+      data-popover
+      id="popover"
+      role="tooltip"
+      class="absolute z-10 invisible inline-block w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-md opacity-0"
+      :month="monthRef"
+      :year="yearRef"
+      @change="dateChange"
+      ref="monthPicker"
+  >
+  </MonthPicker>
   <div class="flex flex-col space-y-4">
-    <div class="flex flex-row mb-1">
+    <div class="flex flex-row mb-2">
+      <button data-popover-target="popover" data-popover-placement="top" data-popover-offset="20" type="button" class="flex items-center text-white me-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center">
+        <i class="w-4 h-4" data-feather="calendar"></i>
+      </button>
       <button
         type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
         @click="addRow"
       >
         <i class="w-4 h-4 me-1" data-feather="plus"></i>
@@ -313,7 +349,7 @@ onBeforeUnmount(() => {
       </button>
       <button
         type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
         data-modal-target="addColModal"
         data-modal-toggle="addColModal"
         @click="clearForm"
@@ -324,7 +360,7 @@ onBeforeUnmount(() => {
 
       <button
         type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
         @click="removeSelectedRow"
       >
         <i class="w-4 h-4 me-1" data-feather="minus"></i>
@@ -333,7 +369,7 @@ onBeforeUnmount(() => {
 
       <button
         type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2"
+        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
         data-modal-target="delColModal"
         data-modal-show="delColModal"
       >
@@ -344,7 +380,7 @@ onBeforeUnmount(() => {
 
     <AgGridVue
       @grid-ready="onGridReady"
-      :rowData="rowData"
+      :rowData="tableRes.data.rows"
 
       autoHeaderHeight
       wrapHeaderText
@@ -358,10 +394,13 @@ onBeforeUnmount(() => {
       @filter-changed="onFilterChanged"
       @row-drag-move="onRowDragMove"
 
+      @column-moved="onColumnMoved"
       @drag-stopped="onDragStopped"
 
       stopEditingWhenCellsLoseFocus
       @cell-editing-stopped="onCellEditingStopped"
+
+      @model-updated="onModelUpdated"
 
       enterNavigatesVertically
       enterNavigatesVerticallyAfterEdit
