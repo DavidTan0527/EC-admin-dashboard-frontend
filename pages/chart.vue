@@ -228,6 +228,19 @@ async function deleteRow(row) {
             </label>
           </div>
 
+          <div class="flex flex-row">
+            <label for="total-fields" class="w-1/3 block mb-2 text-sm font-medium text-gray-900">Display Total</label>
+            <select multiple id="total-fields" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.options.totalFields">
+              <option
+                v-for="field in selectedTable.fields"
+                :key="field.field"
+                :value="field.field"
+              >
+                {{ field.headerName }}
+              </option>
+            </select>
+          </div>
+
           <div class="flex flex-row justify-end">
             <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>
           </div>

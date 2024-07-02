@@ -43,7 +43,7 @@ const props = defineProps({
 const search = ref("")
 const originalRows = toRef(props, "rows")
 const displayRows = computed(() =>
-  originalRows.value.filter(row => props.searchColumns.some(key => key in row && row[key].includes(search.value)))
+  originalRows.value.filter(row => props.searchColumns.length === 0 || props.searchColumns.some(key => key in row && row[key].includes(search.value)))
 )
 
 const modal = ref(null)
@@ -53,6 +53,10 @@ function onAddBtnClick() {
     modal.value.open()
   }
 }
+
+watch(originalRows, () => {
+  nextTick().then(() => feather.replace())
+}, { deep: true })
 
 defineExpose({
   openModal: () => modal.value.open(),
@@ -98,7 +102,7 @@ defineExpose({
       <tbody>
         <tr class="bg-white border-b border-gray-100" :class="[`row-${i}`]" v-for="(row, i) in displayRows" :key="JSON.stringify(row)">
           <td class="px-6 py-3" :class="[column.key]" v-for="column in columns" :key="column.key">
-            <slot :name="column.key" :data="row" :action="actions">
+            <slot :name="column.key" :data="row" :index="i" :action="actions">
               {{ row[column.key] }}
             </slot>
           </td>

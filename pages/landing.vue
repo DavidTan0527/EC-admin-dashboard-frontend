@@ -103,7 +103,7 @@ onMounted(() => {
     <Graph
       v-for="chart in chartReq.data"
       :key="chart.id"
-      class="border border-gray-100 drop-shadow-lg bg-white p-4 rounded-lg h-72"
+      class="border border-gray-100 drop-shadow-lg bg-white p-4 rounded-lg"
       :type="chart.type"
       :title="chart.title"
       :table="tableDataMap[chart.tableId] ?? []"
@@ -111,6 +111,7 @@ onMounted(() => {
       :yField="chart.options.yField"
       :xLabel="chart.options.xLabel"
       :yLabel="chart.options.yLabel"
+      :totalFields="chart.options.totalFields ?? []"
 
       :showDatalabels="chart.options.showDatalabels"
       :showPercentage="chart.options.showPercentage"

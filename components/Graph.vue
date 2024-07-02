@@ -32,6 +32,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  totalFields: {
+    type: Array,
+    default: [],
+  },
   showDatalabels: {
     type: Boolean,
     default: false,
@@ -52,8 +56,6 @@ const props = defineProps({
 
 const dateField = "__DATA_TIMEBUCKET"
 const isTimeseries = computed(() => props.xField === dateField)
-
-console.log(props.xLabel)
 
 const options = computed(() => {
   let opts = {
@@ -81,7 +83,7 @@ const options = computed(() => {
           display: props.type === "line" || props.type === "bar",
         },
         ticks: {
-          padding: 10,
+          padding: 5,
         },
         title: {
           display: props.yLabel !== "",
@@ -156,8 +158,8 @@ const options = computed(() => {
   return opts
 })
 
-const chartData = computed(() => {
-  let activeRows = props.table.rows
+const activeRows = computed(() => {
+  let rows = props.table.rows
 
   if (props.baseDate !== null && !isTimeseries.value) {
     const year = props.baseDate.getFullYear()
@@ -166,13 +168,18 @@ const chartData = computed(() => {
 
     const start  = new Date(year, month - props.pastDuration + 1, 1)
     const end = new Date(firstDayNextMonth - 1)
-    activeRows = activeRows.filter(e => {
+    rows = rows.filter(e => {
       const date = new Date(e[dateField])
       return start <= date && date <= end
     })
   }
 
-  const { labels, data } = generateHistogram(activeRows, props.xField, props.yField)
+  return rows
+})
+
+const chartData = computed(() => {
+
+  const { labels, data } = generateHistogram(activeRows.value, props.xField, props.yField)
   return {
     labels,
     datasets: [
@@ -193,32 +200,52 @@ const chartData = computed(() => {
           'rgb(230, 230, 250)', // Lavender
           'rgb(255, 250, 205)',  // Lemon Chiffon
         ],
-        hoverOffset: 7,
+        hoverOffset: 6,
       }
     ]
   }
 })
 
+function sumField(field) {
+  return activeRows.value.reduce((acc, cur) => acc + cur[field], 0)
+}
+
 </script>
 
 <template>
-  <div>
-    <Bar
-      v-if="props.type === 'bar'"
-      :data="chartData"
-      :options="options" />
-    <Line
-      v-else-if="props.type === 'line'"
-      :data="chartData"
-      :options="options" />
-    <Pie
-      v-else-if="props.type === 'pie'"
-      :data="chartData"
-      :options="options" />
-    <Doughnut
-      v-else-if="props.type === 'doughnut'"
-      :data="chartData"
-      :options="options" />
+  <div class="flex flex-col items-center">
+    <div class="w-full h-64 2xl:h-72">
+      <Bar
+        v-if="props.type === 'bar'"
+        :data="chartData"
+        :options="options" />
+      <Line
+        v-else-if="props.type === 'line'"
+        :data="chartData"
+        :options="options" />
+      <Pie
+        v-else-if="props.type === 'pie'"
+        :data="chartData"
+        :options="options" />
+      <Doughnut
+        v-else-if="props.type === 'doughnut'"
+        :data="chartData"
+        :options="options" />
+    </div>
+    <div class="flex flex-row flex-wrap w-3/4 mt-6" v-if="totalFields.length > 0">
+      <span
+        class="border border-gray-50 text-sm font-medium rounded-full shadow-md"
+        v-for="field in totalFields"
+        :key="field"
+      >
+        <span class="text-white bg-blue-400 rounded-s-full p-1 pl-2">
+          {{ props.table.fields.filter(col => col.field === field)[0].headerName }}
+        </span>
+        <span class="bg-gray-50 rounded-e-full p-1 pr-2">
+          {{ sumField(field) }}
+        </span>
+      </span>
+    </div>
   </div>
 </template>
 

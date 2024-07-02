@@ -152,16 +152,12 @@ function addCol() {
 
 function modifyCol(edit) {
   const targetIdx = colDefs.value.findIndex(col => col.field === targetCol.value)
-  console.log(">>>")
-  console.log(colDefs.value)
   if (edit) {
     colDefs.value.splice(targetIdx, 1, getColFromForm())
   } else {
-    console.log("deleting", targetIdx)
     colDefs.value.splice(targetIdx, 1)
   }
   gridApi.value.setGridOption("columnDefs", colDefs.value);
-  console.log("<<<")
   colModal.value.close()
   save()
 }
