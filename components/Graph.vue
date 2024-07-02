@@ -53,6 +53,8 @@ const props = defineProps({
 const dateField = "__DATA_TIMEBUCKET"
 const isTimeseries = computed(() => props.xField === dateField)
 
+console.log(props.xLabel)
+
 const options = computed(() => {
   let opts = {
     responsive: true,
@@ -61,16 +63,13 @@ const options = computed(() => {
         top: 5,
         left: 20,
         right: 20,
-        bottom: 10,
+        bottom: 0,
       },
     },
     maintainAspectRatio: false,
     scales: {
       x: {
         display: props.type === "line" || props.type === "bar",
-        grid: {
-          display: false,
-        },
         title: {
           display: props.xLabel !== "",
           text: props.xLabel,
@@ -82,7 +81,7 @@ const options = computed(() => {
           display: props.type === "line" || props.type === "bar",
         },
         ticks: {
-          padding: 25,
+          padding: 10,
         },
         title: {
           display: props.yLabel !== "",
@@ -109,7 +108,6 @@ const options = computed(() => {
   }
 
   if (isTimeseries.value) {
-    opts.scales = { ...opts.scales, x: {} }
     opts.scales.x.type = "time"
     opts.scales.x.time = {
       unit: "month",

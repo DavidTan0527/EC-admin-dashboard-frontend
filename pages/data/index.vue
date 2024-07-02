@@ -131,6 +131,7 @@ async function deleteRow(row) {
           <div class="flex flex-row items-baseline">
             <label for="data-table" class="w-1/3 block mb-2 font-medium text-gray-900">Permission Key</label>
             <select id="data-table" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.permKey">
+              <option value="">--</option>
               <option
                 v-for="key in permRes.data"
                 :key="key"

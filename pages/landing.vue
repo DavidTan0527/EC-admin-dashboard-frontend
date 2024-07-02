@@ -109,6 +109,8 @@ onMounted(() => {
       :table="tableDataMap[chart.tableId] ?? []"
       :xField="chart.options.xField"
       :yField="chart.options.yField"
+      :xLabel="chart.options.xLabel"
+      :yLabel="chart.options.yLabel"
 
       :showDatalabels="chart.options.showDatalabels"
       :showPercentage="chart.options.showPercentage"
