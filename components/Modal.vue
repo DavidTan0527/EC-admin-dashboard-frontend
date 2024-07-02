@@ -14,10 +14,6 @@ onMounted(() => {
   initModals()
 })
 
-onUpdated(() => {
-  initModals()
-})
-
 defineExpose({
   open: () => btnOpen.value.click(),
   close: () => btnClose.value.click(),

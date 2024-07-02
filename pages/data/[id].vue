@@ -48,11 +48,11 @@ function evaluator(getValue, formula) {
 }
 
 /*** Start of Modal ***/
-const addColModal = ref(null)
-const delColModal = ref(null)
+const colModal = ref(null)
 const formulaInput = ref(null)
 
-const targetDelCol = ref("")
+const isEdit = ref(false)
+const targetCol = ref("")
 const form = reactive({
   name: ref(""),
   field: ref(""),
@@ -67,7 +67,9 @@ watch(
   () => { form.field = form.name.replaceAll(/[^a-zA-Z0-9_\-]/g, "") }
 )
 
-function clearForm() {
+function clearForm(edit) {
+  isEdit.value = edit
+  targetCol.value = ""
   form.name = ""
   form.field = ""
   form.isFormula = false
@@ -76,57 +78,92 @@ function clearForm() {
   form.selectOptions = []
 }
 
+function loadForm() {
+  const targetIdx = colDefs.value.findIndex(col => col.field === targetCol.value)
+  if (targetIdx === -1)
+    return
+  const col = colDefs.value[targetIdx]
+  form.name = col.headerName
+  form.field = col.field
+  form.isFormula = "formula" in col
+  form.formula = col.formula ?? ""
+  form.type = col.cellEditor ?? ""
+  form.selectOptions = col.cellEditorParams?.values ?? []
+}
+
+watch(targetCol, loadForm)
+
+function getColFromForm() {
+  let col = {
+    headerName: form.name,
+    field: form.field,
+    rowDrag: colDefs.value.length === 0,
+  }
+  if (form.isFormula) {
+    let formula = unref(form.formula)
+    col = {
+      ...col,
+      formula,
+      valueGetter: ({ getValue, data, node }) => {
+        const value = evaluator(getValue, formula)
+        if (!("rowPinned" in node))
+          tableRes.value.data.rows[node.rowIndex][form.field] = value
+        return value
+      },
+      valueSetter: params => {
+        params.data[form.field] = params.newValue
+        return true
+      },
+      editable: false
+    }
+  } else {
+    col = { ...col, cellEditor: form.type, editable: true }
+    if (form.type === "agDateCellEditor") {
+      col.valueFormatter = dateFormatter
+    } else if (form.type === "agSelectCellEditor") {
+      col.cellEditorParams = {
+        values: form.selectOptions,
+        valueListMaxHeight: 120,
+      }
+    }
+  }
+  return col
+}
+
 function addFormulaTerm(field) {
   form.formula += ` {{${field}}} `
   formulaInput.value.focus()
 }
 
-function submitAddCol() {
-  try {
-    let col = { headerName: form.name, field: form.field, rowDrag: colDefs.value.length === 0 }
-    if (form.isFormula) {
-      let formula = unref(form.formula)
-      col = {
-        ...col,
-        formula,
-        valueGetter: ({ getValue, data, node }) => {
-          const value = evaluator(getValue, formula)
-          if (!("rowPinned" in node))
-            tableRes.value.data.rows[node.rowIndex][form.field] = value
-          return value
-        },
-        valueSetter: params => {
-            params.data[form.field] = params.newValue
-            return true
-        },
-        editable: false
-      }
-    } else {
-      col = { ...col, cellEditor: form.type, editable: true }
-      if (form.type === "agDateCellEditor") {
-        col.valueFormatter = dateFormatter
-      } else if (form.type === "agSelectCellEditor") {
-        col.cellEditorParams = {
-          values: form.selectOptions,
-          valueListMaxHeight: 120,
-        }
-      }
-    }
-    colDefs.value.push(col)
-    gridApi.value.setGridOption("columnDefs", colDefs.value);
-    save()
-  } catch (err) {
-    tb.notify({ type: "error", message: err })
+function submitForm() {
+  if (isEdit.value) {
+    modifyCol(true)
+  } else {
+    addCol()
   }
-  addColModal.value.close()
 }
 
-function submitDelCol() {
-  const targetIdx = colDefs.value.findIndex(col => col.field === targetDelCol.value)
-  colDefs.value.splice(targetIdx, 1)
+function addCol() { 
+  colDefs.value.push(getColFromForm())
   gridApi.value.setGridOption("columnDefs", colDefs.value);
+  colModal.value.close()
   save()
-  delColModal.value.close()
+}
+
+function modifyCol(edit) {
+  const targetIdx = colDefs.value.findIndex(col => col.field === targetCol.value)
+  console.log(">>>")
+  console.log(colDefs.value)
+  if (edit) {
+    colDefs.value.splice(targetIdx, 1, getColFromForm())
+  } else {
+    console.log("deleting", targetIdx)
+    colDefs.value.splice(targetIdx, 1)
+  }
+  gridApi.value.setGridOption("columnDefs", colDefs.value);
+  console.log("<<<")
+  colModal.value.close()
+  save()
 }
 
 watch(
@@ -348,47 +385,52 @@ onBeforeUnmount(() => {
   >
   </MonthPicker>
   <div class="flex flex-col space-y-4">
-    <div class="flex flex-row mb-2">
-      <button data-popover-target="popover" data-popover-placement="top" data-popover-offset="20" type="button" class="flex items-center text-white me-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center">
+    <div class="flex flex-row space-x-6 mb-2">
+      <button data-popover-target="popover" data-popover-placement="top" data-popover-offset="10" type="button" class="flex items-center text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2 text-center">
         <i class="w-4 h-4" data-feather="calendar"></i>
       </button>
-      <button
-        type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
-        @click="addRow"
-      >
-        <i class="w-4 h-4 me-1" data-feather="plus"></i>
-        Row
-      </button>
-      <button
-        type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
-        data-modal-target="addColModal"
-        data-modal-toggle="addColModal"
-        @click="clearForm"
-      >
-        <i class="w-4 h-4 me-1" data-feather="plus"></i>
-        Column
-      </button>
+      <div class="inline-flex space-x-1">
+        <button
+          type="button"
+          class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-3 py-2 text-center"
+          @click="addRow"
+        >
+          <i class="w-4 h-4 me-1" data-feather="plus"></i>
+          Row
+        </button>
+        <button
+          type="button"
+          class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-3 py-2 text-center"
+          @click="removeSelectedRow"
+        >
+          <i class="w-4 h-4 me-1" data-feather="minus"></i>
+          Selected Row
+        </button>
+      </div>
 
-      <button
-        type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
-        @click="removeSelectedRow"
-      >
-        <i class="w-4 h-4 me-1" data-feather="minus"></i>
-        Selected Row
-      </button>
+      <div class="inline-flex space-x-1">
+        <button
+          type="button"
+          class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-3 py-2 text-center"
+          data-modal-target="colModal"
+          data-modal-toggle="colModal"
+          @click="() => clearForm(false)"
+        >
+          <i class="w-4 h-4 me-1" data-feather="plus"></i>
+          Column
+        </button>
+        <button
+          type="button"
+          class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-3 py-2 text-center"
+          data-modal-target="colModal"
+          data-modal-toggle="colModal"
+          @click="() => clearForm(true)"
+        >
+          <i class="w-4 h-4 me-1" data-feather="edit-2"></i>
+          Column
+        </button>
+      </div>
 
-      <button
-        type="button"
-        class="flex items-center text-blue-500 hover:text-white border border-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2 text-center me-2"
-        data-modal-target="delColModal"
-        data-modal-show="delColModal"
-      >
-        <i class="w-4 h-4 me-1" data-feather="minus"></i>
-        Column
-      </button>
     </div>
 
     <AgGridVue
@@ -431,10 +473,25 @@ onBeforeUnmount(() => {
   </div>
 
   <!-- Add Column Modal -->
-  <Modal id="addColModal" ref="addColModal">
-    <template #title>Add New Column</template>
+  <Modal id="colModal" ref="colModal">
+    <template #title>
+      {{ isEdit ? "Edit Column" : "Add New Column" }}
+    </template>
     <template #body>
-      <form class="space-y-4 px-4 py-6" @submit.prevent="submitAddCol">
+      <form class="space-y-4 px-4 py-6" @submit.prevent="submitForm">
+        <div class="flex flex-row items-baseline" v-if="isEdit">
+          <label for="col" class="w-1/3 block mb-2 font-medium text-gray-900">Column</label>
+          <select id="col" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="targetCol">
+            <option
+              v-for="(col, index) in colDefs"
+              :key="col.field"
+              :value="col.field"
+              :selected="index === 0"
+            >
+              {{ col.headerName }}
+            </option>
+          </select>
+        </div>
         <div class="flex flex-row items-baseline">
           <label for="name" class="w-1/3 block mb-2 font-medium text-gray-900">Column Name</label>
           <input type="text" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-2" id="name" v-model="form.name" required>
@@ -453,7 +510,7 @@ onBeforeUnmount(() => {
               :key="col.field"
               @click="addFormulaTerm(col.field)"
             >
-              {{ col.field }}
+              {{ col.headerName }}
             </button>
           </div>
           <input
@@ -497,30 +554,13 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
-        <div class="flex flex-row justify-end">
-          <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>
-        </div>
-      </form>
-    </template>
-  </Modal>
-
-  <Modal id="delColModal" ref="delColModal">
-    <template #title>Remove a Column</template>
-    <template #body>
-      <form class="space-y-4 px-4 py-6" @submit.prevent="submitDelCol">
-        <div class="flex flex-row items-baseline">
-          <label for="col" class="w-1/3 block mb-2 font-medium text-gray-900">Type</label>
-          <select id="col" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="targetDelCol">
-            <option
-              v-for="col in colDefs"
-              :key="col.field"
-              :value="col.field"
-            >
-              {{ col.headerName }}
-            </option>
-          </select>
-        </div>
-        <div class="flex flex-row justify-end">
+        <div class="flex flex-row space-x-2 justify-end">
+          <button type="button" class="py-2 px-4 h-fit rounded text-gray-50 bg-red-500"
+            v-if="isEdit"
+            @click="modifyCol(false)"
+          >
+            Delete
+          </button>
           <button type="submit" class="py-2 px-4 h-fit rounded text-gray-50 bg-blue-500">Confirm</button>
         </div>
       </form>
