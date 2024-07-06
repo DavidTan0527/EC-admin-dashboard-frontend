@@ -65,7 +65,7 @@ const options = computed(() => {
         top: 5,
         left: 20,
         right: 20,
-        bottom: 0,
+        bottom: 5,
       },
     },
     maintainAspectRatio: false,
@@ -141,7 +141,7 @@ const options = computed(() => {
       font: {
         size: 12,
       },
-      offset: props.type === "pie" || props.type === "doughnut" ? 12 : 0,
+      offset: props.type === "pie" || props.type === "doughnut" ? 10 : 0,
     }
 
     if (props.showPercentage) {

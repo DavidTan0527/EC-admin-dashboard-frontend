@@ -14,6 +14,16 @@ const headers = {
 
 const tb = ref(null)
 
+const currencyFormatter = (currency, symbol) => {
+  currency = currency.toFixed(2)
+  let sign = currency < 0 ? "-" : ""
+
+  currency = Math.abs(currency)
+  let value = currency.toString()
+  var formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return sign + symbol + `${formatted}`
+}
+
 const dateFormatter = (params) => {
   if (!params.value) {
     return ""
@@ -41,6 +51,10 @@ const dateComparator = (filterDate, cellValue) => {
   return 0
 }
 
+function extractColsFromFormula(formula) {
+  return Array.from(formula.matchAll(/{{([^}]+)}}/g), m => m[1])
+}
+
 function evaluator(getValue, formula) {
   formula = formula.replaceAll(/{{([^}]+)}}/g, "((typeof getValue('$1') !== 'number' || isNaN(getValue('$1'))) ? 0 : getValue('$1'))")
   const value = eval(formula)
@@ -57,6 +71,7 @@ const form = reactive({
   name: ref(""),
   field: ref(""),
   isFormula: ref(false),
+  isFormulaCurrency: ref(false),
   formula: ref(""),
   type: ref(""),
   selectOptions: ref([]),
@@ -73,6 +88,7 @@ function clearForm(edit) {
   form.name = ""
   form.field = ""
   form.isFormula = false
+  form.isFormulaCurrency = false
   form.formula = ""
   form.type = ""
   form.selectOptions = []
@@ -87,16 +103,17 @@ function loadForm() {
   form.field = col.field
   form.isFormula = "formula" in col
   form.formula = col.formula ?? ""
-  form.type = col.cellEditor ?? ""
+  form.type = col.type ?? ""
   form.selectOptions = col.cellEditorParams?.values ?? []
+  form.isFormulaCurrency = form.isFormula && form.type === "currency"
 }
 
 watch(targetCol, loadForm)
 
 function getColFromForm() {
   let col = {
-    headerName: form.name,
-    field: form.field,
+    headerName: unref(form.name),
+    field: unref(form.field),
     rowDrag: colDefs.value.length === 0,
   }
   if (form.isFormula) {
@@ -107,20 +124,26 @@ function getColFromForm() {
       valueGetter: ({ getValue, data, node }) => {
         const value = evaluator(getValue, formula)
         if (!("rowPinned" in node))
-          tableRes.value.data.rows[node.rowIndex][form.field] = value
+          tableRes.value.data.rows[node.rowIndex][col.field] = value
         return value
-      },
-      valueSetter: params => {
-        params.data[form.field] = params.newValue
-        return true
       },
       editable: false
     }
+
+    if (form.isFormulaCurrency) {
+      col.type = "currency"
+    }
   } else {
-    col = { ...col, cellEditor: form.type, editable: true }
-    if (form.type === "agDateCellEditor") {
+    col = {
+      ...col,
+      type: form.type,
+      cellEditor: typeEditorMap[form.type],
+      editable: true
+    }
+
+    if (form.type === "date") {
       col.valueFormatter = dateFormatter
-    } else if (form.type === "agSelectCellEditor") {
+    } else if (form.type === "select") {
       col.cellEditorParams = {
         values: form.selectOptions,
         valueListMaxHeight: 120,
@@ -152,6 +175,10 @@ function addCol() {
 
 function modifyCol(edit) {
   const targetIdx = colDefs.value.findIndex(col => col.field === targetCol.value)
+  if (targetIdx === -1) {
+    return
+  }
+
   if (edit) {
     colDefs.value.splice(targetIdx, 1, getColFromForm())
   } else {
@@ -192,17 +219,33 @@ if (tableRes.value === null) {
   }
 }
 
+const typeEditorMap = {
+  text: "agTextCellEditor",
+  number: "agNumberCellEditor",
+  select: "agSelectCellEditor",
+  currency: "agNumberCellEditor",
+  date: "agDateCellEditor",
+  checkbox: "agCheckboxCellEditor",
+}
+
+const columnTypes = {
+  currency: {
+    valueFormatter: ({ value }) => currencyFormatter(value ?? 0, "RM"),
+    filter: typeEditorMap.currency,
+  }
+}
+
 const colDefs = ref(tableRes.value.data.fields.map((e, i) => ({
   ...e,
   filter: true,
   filterParams: {
     buttons: [ 'apply', 'clear', 'reset', 'cancel' ],
-    ...(e.cellEditor === "agDateCellEditor") && { comparator: dateComparator },
+    ...(e.cellEditor === typeEditorMap.date) && { comparator: dateComparator },
   },
   editable: !('formula' in e),
   rowDrag: i === 0,
   cellEditorParams: {
-    ...(e.cellEditor === "agSelectCellEditor") && { valueListMaxHeight: 120 },
+    ...(e.cellEditor === typeEditorMap.select) && { valueListMaxHeight: 120 },
     ...e.cellEditorParams,
   },
 
@@ -215,14 +258,14 @@ const colDefs = ref(tableRes.value.data.fields.map((e, i) => ({
     },
   },
 
-  ...(e.cellEditor === "agDateCellEditor") && {
+  ...(e.cellEditor === typeEditorMap.date) && {
     cellDataType: "date",
     valueFormatter: dateFormatter,
   },
 })))
 
 function getSumByCols() {
-  const canSum = col => col.cellEditor === "agNumberCellEditor"
+  const canSum = col => col.cellEditor === typeEditorMap.number
   const targetFields = colDefs.value.filter(canSum).map(e => e.field)
   let res = {}
   for (const field of targetFields) {
@@ -432,6 +475,10 @@ onBeforeUnmount(() => {
     <AgGridVue
       @grid-ready="onGridReady"
       :rowData="tableRes.data.rows"
+      :columnTypes="columnTypes"
+      :defaultColDef="{
+        cellClass: 'text-center',
+      }"
 
       autoHeaderHeight
       wrapHeaderText
@@ -497,8 +544,8 @@ onBeforeUnmount(() => {
           <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
           <span class="ms-3 text-sm font-medium text-gray-900">Is Formula?</span>
         </label>
-        <div v-if="form.isFormula">
-          <div class="inline-flex flex-wrap space-x-2 mb-4" role="group">
+        <template v-if="form.isFormula">
+          <div class="flex flex-wrap space-x-2" role="group">
             <button
               type="button"
               class="px-2 py-1 my-1 rounded-sm text-sm font-medium text-gray-900 bg-transparent border border-gray-900 hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white"
@@ -516,19 +563,25 @@ onBeforeUnmount(() => {
             v-model="form.formula"
             required
             ref="formulaInput">
-        </div>
-        <div class="space-y-4" v-else>
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" value="" class="sr-only peer" v-model="form.isFormulaCurrency">
+            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <span class="ms-3 text-sm font-medium text-gray-900">Is Currency?</span>
+          </label>
+        </template>
+        <template v-else>
           <div class="flex flex-row items-baseline">
             <label for="type" class="w-1/3 block mb-2 font-medium text-gray-900">Type</label>
             <select id="type" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" v-model="form.type">
-              <option value="agTextCellEditor">Text</option>
-              <option value="agNumberCellEditor">Number</option>
-              <option value="agSelectCellEditor">Select</option>
-              <option value="agDateCellEditor">Date</option>
-              <option value="agCheckboxCellEditor">Checkbox</option>
+              <option value="text">Text</option>
+              <option value="number">Number</option>
+              <option value="currency">Currency</option>
+              <option value="select">Select</option>
+              <option value="date">Date</option>
+              <option value="checkbox">Checkbox</option>
             </select>
           </div>
-          <div class="flex flex-row items-baseline" v-if="form.type === 'agSelectCellEditor'">
+          <div class="flex flex-row items-baseline" v-if="form.type === 'select'">
             <label class="flex flex-col space-y-1 items-start w-1/3 block mb-2 font-medium text-gray-900">
               Select Options
               <span class="flex flex-row space-x-2">
@@ -549,7 +602,7 @@ onBeforeUnmount(() => {
                 required>
             </div>
           </div>
-        </div>
+        </template>
         <div class="flex flex-row space-x-2 justify-end">
           <button type="button" class="py-2 px-4 h-fit rounded text-gray-50 bg-red-500"
             v-if="isEdit"
@@ -568,11 +621,13 @@ onBeforeUnmount(() => {
 
 <style>
 .ag-center-cols-viewport {
-    min-height: 200px !important;
+  min-height: 200px !important;
 }
-
+.ag-header-container .ag-header-cell-label {
+  justify-content: center;
+}
 .ag-floating-bottom-container .ag-row {
-    background-color: var(--ag-header-background-color);
+  background-color: var(--ag-header-background-color);
 }
 </style>
 

@@ -20,7 +20,7 @@ function logout() {
 </script>
 
 <template>
-  <div class="h-screen overflow-y-hidden">
+  <div class="flex flex-col items-stretch h-screen">
     <header class="flex flex-row justify-between items-center border-b border-gray-200 px-5 py-2">
       <div class="text-lg font-bold">EC Admin Dashboard</div>
       <span class="cursor-pointer rounded p-2 hover:text-white hover:bg-blue-500 duration-300" @click="logout">
@@ -28,7 +28,7 @@ function logout() {
       </span>
     </header>
 
-    <div class="flex flex-row content-container min-h-full">
+    <div class="flex flex-row content-container grow">
       <div class="flex flex-col justify-between w-1/5 max-w-lg">
         <Sidebar :links="links" />
       </div>
