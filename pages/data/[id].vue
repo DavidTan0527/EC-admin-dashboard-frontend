@@ -15,12 +15,12 @@ const headers = {
 const tb = ref(null)
 
 const currencyFormatter = (currency, symbol) => {
-  currency = currency.toFixed(2)
-  let sign = currency < 0 ? "-" : ""
-  
   if (currency === 0) {
     return ""
   }
+
+  currency = currency.toFixed(2)
+  let sign = currency < 0 ? "-" : ""
 
   currency = Math.abs(currency)
   let value = currency.toString()
