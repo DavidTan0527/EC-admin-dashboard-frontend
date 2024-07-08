@@ -38,7 +38,13 @@ const props = defineProps({
     type: Array,
     default: [],
   },
+  rowDraggable: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const emit = defineEmits([ "roworderchange" ])
 
 const search = ref("")
 const originalRows = toRef(props, "rows")
@@ -57,6 +63,31 @@ function onAddBtnClick() {
 watch(originalRows, () => {
   nextTick().then(() => feather.replace())
 }, { deep: true })
+
+let moveTarget = null
+const onRowDragStart = event => {
+  moveTarget = event.target
+}
+
+const onRowDragEnd = event => {
+  moveTarget = null
+}
+
+const onRowDragOver = event => {
+  let moveOverRow = event.target.parentElement
+  const fromIndex = parseInt(moveTarget.dataset.index)
+  const toIndex = parseInt(moveOverRow.dataset.index)
+  
+  if (fromIndex === toIndex) {
+    return
+  }
+
+  const temp = originalRows.value[fromIndex]
+  originalRows.value[fromIndex] = originalRows.value[toIndex]
+  originalRows.value[toIndex] = temp
+
+  emit("roworderchange", fromIndex, toIndex)
+}
 
 defineExpose({
   openModal: () => modal.value.open(),
@@ -100,7 +131,9 @@ defineExpose({
         </tr>
       </thead>
       <tbody>
-        <tr class="bg-white border-b border-gray-100" :class="[`row-${i}`]" v-for="(row, i) in displayRows" :key="JSON.stringify(row)">
+        <tr class="bg-white border-b border-gray-100" :class="[`row-${i}`]" v-for="(row, i) in displayRows" :key="JSON.stringify(row)"
+          :data-index="i"
+          :draggable="rowDraggable && search.length === 0" @dragstart="onRowDragStart" @dragend="onRowDragEnd" @dragover.prevent="onRowDragOver">
           <td class="px-6 py-3" :class="[column.key]" v-for="column in columns" :key="column.key">
             <slot :name="column.key" :data="row" :index="i" :action="actions">
               {{ row[column.key] }}

@@ -17,6 +17,10 @@ const tb = ref(null)
 const currencyFormatter = (currency, symbol) => {
   currency = currency.toFixed(2)
   let sign = currency < 0 ? "-" : ""
+  
+  if (currency === 0) {
+    return ""
+  }
 
   currency = Math.abs(currency)
   let value = currency.toString()
@@ -203,6 +207,7 @@ async function dateChange() {
   await forceSave()
   yearRef.value = monthPicker.value.year
   monthRef.value = monthPicker.value.month
+  gridApi.value?.sizeColumnsToFit()
 }
 /*** End of MonthPicker ***/
 

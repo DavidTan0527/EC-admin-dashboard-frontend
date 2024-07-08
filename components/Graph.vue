@@ -206,8 +206,10 @@ const chartData = computed(() => {
   }
 })
 
+const norm = value => typeof value !== "number" || isNaN(value) ? 0 : value
+
 function sumField(field) {
-  return activeRows.value.reduce((acc, cur) => acc + cur[field], 0)
+  return activeRows.value.reduce((acc, cur) => acc + norm(cur[field]), 0)
 }
 
 </script>

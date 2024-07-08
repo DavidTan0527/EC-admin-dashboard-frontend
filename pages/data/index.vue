@@ -77,6 +77,32 @@ function editRow(row) {
   table.value.openModal()
 }
 
+function save(from, to) {
+  // save from -> to, to -> from
+  const saveOne = async (index) => {
+    let row = tableReq.value.data[index]
+
+    try {
+      const res = await $fetch(`${config.public.apiBase }/table/sort/${row.id}`, {
+        method: "PUT",
+        headers,
+        body: { sortKey: index },
+      })
+
+      if (!res.success) {
+        tb.value.notify({ message: res.message, type: "error" })
+      }
+    } catch (err) {
+      tb.value.notify({ message: err, type: "error" })
+    }
+  }
+
+  saveOne(from)
+  saveOne(to)
+}
+
+
+
 async function deleteRow(row) {
   try {
     let res = await $fetch(`${config.public.apiBase }/table/${row.id}`, {
@@ -109,6 +135,8 @@ async function deleteRow(row) {
       addBtn
       :addBtnAction="addRow"
       addModal
+      rowDraggable
+      @roworderchange="save"
       ref="table"
     >
       <template #actions="{ data }">
