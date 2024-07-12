@@ -87,6 +87,9 @@ function loadForm(row) {
   form.permKey = row.permKey
   form.tableId = row.tableId
   form.options = row.options
+  if (!("xColumnGroups" in form.options)) {
+    form.options.xColumnGroups = []
+  }
 
   table.value.openModal()
 }

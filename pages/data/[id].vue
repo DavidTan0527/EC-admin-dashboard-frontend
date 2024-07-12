@@ -398,8 +398,10 @@ async function saveInner() {
 }
 
 async function forceSave() {
-  save.cancel()
-  await saveInner()
+  let cancelled = save.cancel()
+  if (cancelled) {
+    await saveInner()
+  }
 }
 
 onMounted(() => {
