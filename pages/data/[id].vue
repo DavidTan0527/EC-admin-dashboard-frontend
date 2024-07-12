@@ -19,12 +19,11 @@ const currencyFormatter = (currency, symbol) => {
     return ""
   }
 
-  currency = currency.toFixed(2)
   let sign = currency < 0 ? "-" : ""
-
   currency = Math.abs(currency)
-  let value = currency.toString()
-  var formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  currency = currency.toFixed(2)
+
+  let formatted = currency.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   return sign + symbol + `${formatted}`
 }
 

@@ -171,11 +171,15 @@ const activeRows = computed(() => {
 })
 
 const chartData = computed(() => {
-  const { labels, data } = generateHistogram(
+  let { labels, data } = generateHistogram(
     activeRows.value,
-    props.xField === '__DATA_COLUMNGROUPS' ? xColumnGroupsRef.value : props.xField,
+    props.xField === "__DATA_COLUMNGROUPS" ? xColumnGroupsRef.value : props.xField,
     props.yField
   )
+
+  if (props.xField === "__DATA_COLUMNGROUPS") {
+    labels = labels.map(label => tableRef.value.fields?.filter(col => col.field === label)[0]?.headerName)
+  }
 
   return {
     labels,
@@ -204,9 +208,26 @@ const chartData = computed(() => {
 })
 
 const norm = value => typeof value !== "number" || isNaN(value) ? 0 : value
+const currencyFormatter = (currency, symbol) => {
+  if (currency === 0) {
+    return ""
+  }
+
+  let sign = currency < 0 ? "-" : ""
+  currency = Math.abs(currency)
+  currency = currency.toFixed(2)
+
+  let formatted = currency.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return sign + symbol + `${formatted}`
+}
+
+function isCurrencyField(field) {
+  return tableRef.value.fields?.filter(col => col.field === field)[0]?.type === "currency" ?? false
+}
 
 function sumField(field) {
-  return activeRows.value.reduce((acc, cur) => acc + norm(cur[field]), 0)
+  let value = activeRows.value.reduce((acc, cur) => acc + norm(cur[field]), 0)
+  return isCurrencyField(field) ? currencyFormatter(value, "RM") : value
 }
 
 </script>
@@ -231,7 +252,7 @@ function sumField(field) {
         :data="chartData"
         :options="options" />
     </div>
-    <div class="flex flex-row flex-wrap w-3/4 mt-6" v-if="totalFields.length > 0">
+    <div class="flex flex-row flex-wrap w-3/4 mt-6 gap-y-2" v-if="totalFields.length > 0">
       <span
         class="border border-gray-50 text-sm font-medium rounded-full shadow-md"
         v-for="field in totalFields"
