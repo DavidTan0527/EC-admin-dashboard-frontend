@@ -38,7 +38,7 @@ watch(currChartView, async () => {
     let tableIdSet = new Set(req.data.map(c => c.tableId))
     let tableIds = [...tableIdSet.difference(cachedSet)]
     let tableResponses = await Promise.all(tableIds.map(id => useApiFetch(`/table/${id}`, { headers })))
-    let tableData = tableResponses.map(({ data : { value: { data: table } } }, i) => [tableIds[i], augmentTableData(table)])
+    let tableData = tableResponses.map(({ data : { value: { data: table } } }, i) => [tableIds[i], transformTableData(table)])
     tableDataMap = { ...tableDataMap, ...Object.fromEntries(tableData) }
 
     cachedSet = cachedSet.union(tableIdSet)
@@ -47,16 +47,6 @@ watch(currChartView, async () => {
   }
   isLoading.value = false
 }, { immediate: true })
-
-function augmentTableData(table) {
-  table.rows = []
-  for (const [year, yearData] of Object.entries(table.data)) {
-    for (const [month, data] of Object.entries(yearData)) {
-      table.rows = table.rows.concat(data.map(e => ({ ...e, __DATA_TIMEBUCKET: new Date(year, month-1, 1) })))
-    }
-  }
-  return table
-}
 
 const monthPicker = ref(null)
 const baseDate = ref(new Date())
@@ -106,14 +96,14 @@ onMounted(() => {
       class="border border-gray-100 drop-shadow-lg bg-white p-4 rounded-lg"
       :type="chart.type"
       :title="chart.title"
-      :table="tableDataMap[chart.tableId] ?? []"
-      :xField="chart.options.xField"
+      :table="tableDataMap[chart.tableId] ?? {}"
+      :xField="chart.options.xField ?? ''"
+      :xColumnGroups="chart.options.xColumnGroups ?? []"
       :yField="chart.options.yField"
       :xLabel="chart.options.xLabel"
       :yLabel="chart.options.yLabel"
       :totalFields="chart.options.totalFields ?? []"
 
-      :showDatalabels="chart.options.showDatalabels"
       :showPercentage="chart.options.showPercentage"
 
       :baseDate="baseDate"

@@ -20,8 +20,12 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  xColumnGroups: {
+    type: Array,
+    default: [],
+  },
   yField: {
-    type: String,
+    type: [String, Number],
     default: undefined,
   },
   xLabel: {
@@ -35,10 +39,6 @@ const props = defineProps({
   totalFields: {
     type: Array,
     default: [],
-  },
-  showDatalabels: {
-    type: Boolean,
-    default: false,
   },
   showPercentage: {
     type: Boolean,
@@ -56,6 +56,10 @@ const props = defineProps({
 
 const dateField = "__DATA_TIMEBUCKET"
 const isTimeseries = computed(() => props.xField === dateField)
+
+const typeRef = toRef(props, "type")
+const tableRef = toRef(props, "table")
+const xColumnGroupsRef = toRef(props, "xColumnGroups")
 
 const options = computed(() => {
   let opts = {
@@ -131,27 +135,16 @@ const options = computed(() => {
     opts.scales.x.max = end
   }
 
-  if (props.showDatalabels) {
+  if (props.showPercentage) {
     opts.plugins = { ...opts.plugins }
-    opts.plugins.datalabels = {
-      anchor: "center",
-      align: "end",
-      color: "#0a0a01",
-      // display: "auto",
-      font: {
-        size: 12,
-      },
-      offset: props.type === "pie" || props.type === "doughnut" ? 10 : 0,
-    }
+    opts.plugins.datalabels = {}
 
-    if (props.showPercentage) {
-      opts.plugins.datalabels.formatter = (value, ctx) => {
-        let sum = 0
-        let dataArr = ctx.chart.data.datasets[0].data
-        dataArr.map(data => { sum += data })
-        let percentage = (value*100 / sum).toFixed(2)+"%"
-        return percentage
-      }
+    opts.plugins.datalabels.formatter = (value, ctx) => {
+      let sum = 0
+      let dataArr = ctx.chart.data.datasets[0].data
+      dataArr.map(data => { sum += data })
+      let percentage = (value*100 / sum).toFixed(2)+"%"
+      return percentage
     }
   }
 
@@ -159,7 +152,7 @@ const options = computed(() => {
 })
 
 const activeRows = computed(() => {
-  let rows = props.table.rows
+  let rows = tableRef.value.rows ?? []
 
   if (props.baseDate !== null && !isTimeseries.value) {
     const year = props.baseDate.getFullYear()
@@ -178,8 +171,12 @@ const activeRows = computed(() => {
 })
 
 const chartData = computed(() => {
+  const { labels, data } = generateHistogram(
+    activeRows.value,
+    props.xField === '__DATA_COLUMNGROUPS' ? xColumnGroupsRef.value : props.xField,
+    props.yField
+  )
 
-  const { labels, data } = generateHistogram(activeRows.value, props.xField, props.yField)
   return {
     labels,
     datasets: [
@@ -218,19 +215,19 @@ function sumField(field) {
   <div class="flex flex-col items-center">
     <div class="w-full h-64 2xl:h-72">
       <Bar
-        v-if="props.type === 'bar'"
+        v-if="typeRef === 'bar'"
         :data="chartData"
         :options="options" />
       <Line
-        v-else-if="props.type === 'line'"
+        v-else-if="typeRef === 'line'"
         :data="chartData"
         :options="options" />
       <Pie
-        v-else-if="props.type === 'pie'"
+        v-else-if="typeRef === 'pie'"
         :data="chartData"
         :options="options" />
       <Doughnut
-        v-else-if="props.type === 'doughnut'"
+        v-else-if="typeRef === 'doughnut'"
         :data="chartData"
         :options="options" />
     </div>
@@ -241,7 +238,7 @@ function sumField(field) {
         :key="field"
       >
         <span class="text-white bg-blue-400 rounded-s-full p-1 pl-2">
-          {{ props.table.fields.filter(col => col.field === field)[0].headerName }}
+          {{ tableRef.fields?.filter(col => col.field === field)[0]?.headerName ?? "???" }}
         </span>
         <span class="bg-gray-50 rounded-e-full p-1 pr-2">
           {{ sumField(field) }}
