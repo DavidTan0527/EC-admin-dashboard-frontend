@@ -635,5 +635,13 @@ onBeforeUnmount(() => {
 .ag-floating-bottom-container .ag-row {
   background-color: var(--ag-header-background-color);
 }
+.ag-floating-bottom-container .ag-row {
+  background-color: var(--ag-header-background-color);
+}
+
+.ag-floating-bottom-container .ag-row .ag-cell,
+.ag-body .ag-cell {
+  border-right: solid 1px rgb(229 231 235);
+}
 </style>
 
